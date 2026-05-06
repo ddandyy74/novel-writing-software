@@ -1,0 +1,344 @@
+/* 全局样式 - 基于设计令牌 */
+
+/* ========== 字体家族 ========== */
+:root {
+  /* 主字体 - 用于正文、UI */
+  --font-family-primary: 
+    -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue',
+    Helvetica, Arial, sans-serif;
+  
+  /* 编辑器字体 - 用于代码、等宽内容 */
+  --font-family-editor: 
+    'Source Han Serif SC', 'Noto Serif SC',
+    'Songti SC', 'SimSun', serif;
+  
+  /* 等宽字体 - 用于统计、行号 */
+  --font-family-mono: 
+    'JetBrains Mono', 'Fira Code',
+    'Source Code Pro', Consolas,
+    'Courier New', monospace;
+  
+  /* 标题字体 */
+  --font-family-heading: 
+    'PingFang SC', 'Microsoft YaHei',
+    -apple-system, BlinkMacSystemFont,
+    sans-serif;
+}
+
+/* ========== 字体大小系统 ========== */
+:root {
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.875rem;    /* 14px */
+  --font-size-base: 1rem;      /* 16px - 基准 */
+  --font-size-lg: 1.125rem;    /* 18px */
+  --font-size-xl: 1.25rem;     /* 20px */
+  --font-size-2xl: 1.5rem;     /* 24px */
+  --font-size-3xl: 1.875rem;   /* 30px */
+  --font-size-4xl: 2.25rem;    /* 36px */
+  --font-size-5xl: 3rem;       /* 48px */
+}
+
+/* ========== 间距系统 ========== */
+:root {
+  --space-0: 0;           /* 0px */
+  --space-1: 0.25rem;     /* 4px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-4: 1rem;        /* 16px - 基准 */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-8: 2rem;        /* 32px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+  --space-24: 6rem;       /* 96px */
+}
+
+/* ========== 过渡时间 ========== */
+:root {
+  --duration-instant: 0ms;      /* 瞬间 */
+  --duration-fast: 150ms;       /* 快速 */
+  --duration-normal: 300ms;     /* 正常 */
+  --duration-slow: 500ms;       /* 慢速 */
+  --duration-slower: 700ms;     /* 更慢 */
+}
+
+/* ========== 缓动函数 ========== */
+:root {
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ========== 默认主题 - 设计令牌 ========== */
+:root,
+:root[data-theme="default"] {
+  /* 主色系 (Primary) */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;   /* 主色 */
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+  
+  /* 次要色系 (Secondary/Neutral) */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  
+  /* 语义色系 */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* 背景色系 */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  
+  /* 文本色系 */
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-disabled: #d1d5db;
+  --color-text-inverse: #ffffff;
+  
+  /* 边框色系 */
+  --color-border-light: #e5e7eb;
+  --color-border-medium: #d1d5db;
+  --color-border-dark: #9ca3af;
+  --color-border-focus: #0ea5e9;
+  
+  /* 编辑器专用色 */
+  --editor-bg: #ffffff;
+  --editor-text: #1f2937;
+  --editor-text-secondary: #6b7280;
+  --editor-selection: #bfdbfe;
+  --editor-cursor: #0ea5e9;
+  --editor-line-number: #9ca3af;
+  --editor-line-number-active: #3b82f6;
+  --editor-line-highlight: #f8fafc;
+  
+  /* AI 标注色 */
+  --ai-error-underline: #ef4444;
+  --ai-error-bg: #fef2f2;
+  --ai-suggestion-bg: #ecfdf5;
+  
+  /* 阴影系统 */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+}
+
+/* ========== 护眼模式 ========== */
+:root[data-theme="eye-care"] {
+  /* 主色系 (Primary - 绿色调) */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
+  
+  /* 背景色系 - 米色调 */
+  --color-bg-primary: #fffef5;
+  --color-bg-secondary: #fffbeb;
+  --color-bg-tertiary: #fef3c7;
+  --color-bg-elevated: #fffef5;
+  
+  /* 文本色系 */
+  --color-text-primary: #3f3f1e;
+  --color-text-secondary: #6b6949;
+  --color-text-tertiary: #9ca377;
+  --color-text-disabled: #d1d5b7;
+  --color-text-inverse: #ffffff;
+  
+  /* 边框色系 */
+  --color-border-light: #e5e2d4;
+  --color-border-medium: #d1cebe;
+  --color-border-dark: #9ca887;
+  --color-border-focus: #22c55e;
+  
+  /* 编辑器专用色 */
+  --editor-bg: #fffef5;
+  --editor-text: #3f3f1e;
+  --editor-text-secondary: #6b6949;
+  --editor-selection: #d1fae5;
+  --editor-cursor: #22c55e;
+  --editor-line-number: #9ca377;
+  --editor-line-number-active: #16a34a;
+  --editor-line-highlight: #fef3c7;
+  
+  /* AI 标注色 */
+  --ai-error-underline: #dc2626;
+  --ai-error-bg: #fef2f2;
+  --ai-suggestion-bg: #d1fae5;
+  
+  /* 阴影系统 - 暖色调 */
+  --shadow-xs: 0 1px 2px 0 rgb(139 119 72 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(139 119 72 / 0.1), 0 1px 2px -1px rgb(139 119 72 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(139 119 72 / 0.1), 0 2px 4px -2px rgb(139 119 72 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(139 119 72 / 0.1), 0 4px 6px -4px rgb(139 119 72 / 0.1);
+}
+
+/* ========== 夜间模式 ========== */
+:root[data-theme="dark"] {
+  /* 主色系 (Primary - 蓝紫色调) */
+  --color-primary-50: #1e1b4b;
+  --color-primary-100: #312e81;
+  --color-primary-200: #3730a3;
+  --color-primary-300: #4338ca;
+  --color-primary-400: #4f46e5;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #818cf8;
+  --color-primary-700: #a5b4fc;
+  --color-primary-800: #c7d2fe;
+  --color-primary-900: #e0e7ff;
+  
+  /* 背景色系 - 深色 */
+  --color-bg-primary: #0f0f10;
+  --color-bg-secondary: #18181b;
+  --color-bg-tertiary: #27272a;
+  --color-bg-elevated: #1f1f23;
+  
+  /* 文本色系 */
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+  --color-text-disabled: #3f3f46;
+  --color-text-inverse: #0f0f10;
+  
+  /* 边框色系 */
+  --color-border-light: #27272a;
+  --color-border-medium: #3f3f46;
+  --color-border-dark: #52525b;
+  --color-border-focus: #6366f1;
+  
+  /* 编辑器专用色 */
+  --editor-bg: #0f0f10;
+  --editor-text: #e4e4e7;
+  --editor-text-secondary: #a1a1aa;
+  --editor-selection: #4338ca;
+  --editor-cursor: #6366f1;
+  --editor-line-number: #52525b;
+  --editor-line-number-active: #6366f1;
+  --editor-line-highlight: #18181b;
+  
+  /* AI 标注色 - 深色适配 */
+  --ai-error-underline: #f87171;
+  --ai-error-bg: #450a0a;
+  --ai-suggestion-bg: #14532d;
+  
+  /* 阴影系统 */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  
+  /* 发光效果 - 深色主题特有 */
+  --glow-primary: 0 0 20px rgb(99 102 241 / 0.3);
+  --glow-success: 0 0 20px rgb(16 185 129 / 0.3);
+  --glow-error: 0 0 20px rgb(239 68 68 / 0.3);
+}
+
+/* ========== 全局基础样式 ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ========== 主题切换动画 ========== */
+* {
+  transition: background-color var(--duration-normal) var(--ease-out),
+              color var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ========== 滚动条样式 ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-medium);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-dark);
+}
+
+/* ========== 选中文本样式 ========== */
+::selection {
+  background-color: var(--editor-selection);
+  color: var(--editor-text);
+}
+
+/* ========== 焦点样式 ========== */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

@@ -1,0 +1,22 @@
+{
+  "name": "novel-writing-software",
+  "version": "1.0.0",
+  "description": "网文作者码字软件 - 基于 Tauri + React + CodeMirror 6",
+  "scripts": {
+    "dev": "cd src/frontend && npm run dev",
+    "build": "cd src/frontend && npm run build",
+    "tauri:dev": "cd src/frontend && npm run tauri:dev",
+    "tauri:build": "cd src/frontend && npm run tauri:build",
+    "install:frontend": "cd src/frontend && npm install",
+    "install:all": "npm run install:frontend"
+  },
+  "keywords": [
+    "novel",
+    "writing",
+    "tauri",
+    "react",
+    "codemirror"
+  ],
+  "author": "",
+  "license": "MIT"
+}
