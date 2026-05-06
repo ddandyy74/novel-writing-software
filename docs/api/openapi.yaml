@@ -1,0 +1,416 @@
+openapi: 3.0.0
+info:
+  title: 网文作者码字软件 API
+  description: 网文作者码字软件后端 API 文档
+  version: 1.0.0
+  contact:
+    name: Backend Architect
+    email: backend@novel-writer.com
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: 开发环境
+  - url: https://api.novel-writer.com/api/v1
+    description: 生产环境
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [user, author, admin]
+        settings:
+          type: object
+          properties:
+            theme:
+              type: string
+              enum: [light, dark, sepia]
+            fontSize:
+              type: integer
+            dailyGoal:
+              type: integer
+            autoSave:
+              type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Work:
+      type: object
+      properties:
+        workId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        genre:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [draft, published, archived]
+        wordCount:
+          type: integer
+        chapterCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Chapter:
+      type: object
+      properties:
+        chapterId:
+          type: string
+          format: uuid
+        workId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        wordCount:
+          type: integer
+        order:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        error:
+          type: object
+          properties:
+            field:
+              type: string
+            reason:
+              type: string
+        timestamp:
+          type: integer
+
+    Success:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: success
+        data:
+          type: object
+        timestamp:
+          type: integer
+
+paths:
+  /auth/register:
+    post:
+      summary: 用户注册
+      tags: [认证]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, nickname]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                nickname:
+                  type: string
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                          email:
+                            type: string
+                          nickname:
+                            type: string
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+
+  /auth/login:
+    post:
+      summary: 用户登录
+      tags: [认证]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+                          expiresIn:
+                            type: integer
+
+  /works:
+    get:
+      summary: 获取作品列表
+      tags: [作品]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, archived]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Work'
+                          pagination:
+                            type: object
+
+    post:
+      summary: 创建作品
+      tags: [作品]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                genre:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Work'
+
+  /works/{workId}/chapters:
+    get:
+      summary: 获取章节列表
+      tags: [章节]
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Chapter'
+
+    post:
+      summary: 创建章节
+      tags: [章节]
+      parameters:
+        - name: workId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, order]
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                order:
+                  type: integer
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Chapter'
+
+  /sync/push:
+    post:
+      summary: 推送本地变更
+      tags: [同步]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientId, lastSyncTime, changes]
+              properties:
+                clientId:
+                  type: string
+                lastSyncTime:
+                  type: string
+                  format: date-time
+                changes:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Success'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          syncTime:
+                            type: string
+                            format: date-time
+                          conflicts:
+                            type: array
+                            items:
+                              type: object

@@ -1,0 +1,279 @@
+// Prisma Schema for Novel Writer
+// 数据库设计文档：docs/architecture/database-design.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 用户模块
+// ============================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  nickname     String
+  avatar       String?
+  passwordHash String   @map("password_hash")
+  role         String   @default("user") // user, author, admin
+  settings     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  version      Int      @default(1)
+  deletedAt    DateTime? @map("deleted_at")
+
+  // 关联
+  works             Work[]
+  characters        Character[]
+  outlines          Outline[]
+  writingGoals      WritingGoal[]
+  writingRecords    WritingRecord[]
+  platformAccounts  PlatformAccount[]
+  syncLogs          SyncLog[]
+  securityLogs      SecurityLog[]
+
+  @@map("users")
+}
+
+// ============================================
+// 作品模块
+// ============================================
+
+model Work {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  title         String
+  genre         String?
+  description   String?  @db.Text
+  tags          Json     @default("[]")
+  status        String   @default("draft") // draft, published, archived
+  wordCount     Int      @default(0) @map("word_count")
+  chapterCount  Int      @default(0) @map("chapter_count")
+  coverUrl      String?  @map("cover_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  version       Int      @default(1)
+  deletedAt     DateTime? @map("deleted_at")
+
+  // 关联
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapters    Chapter[]
+  characters  Character[]
+  outlines    Outline[]
+  writingGoals    WritingGoal[]
+  writingRecords  WritingRecord[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([updatedAt])
+  @@map("works")
+}
+
+model Chapter {
+  id         String   @id @default(uuid())
+  workId     String   @map("work_id")
+  title      String
+  content    String   @db.Text
+  wordCount  Int      @default(0) @map("word_count")
+  order      Int
+  status     String   @default("draft") // draft, published
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  version    Int      @default(1)
+  deletedAt  DateTime? @map("deleted_at")
+
+  // 关联
+  work      Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
+  outlines  Outline[]
+
+  @@index([workId])
+  @@index([workId, order])
+  @@index([status])
+  @@map("chapters")
+}
+
+model Character {
+  id           String   @id @default(uuid())
+  workId       String   @map("work_id")
+  name         String
+  age          Int?
+  gender       String?
+  appearance   String?  @db.Text
+  personality  String?  @db.Text
+  background   String?  @db.Text
+  abilities    Json     @default("[]")
+  tags         Json     @default("[]")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  version      Int      @default(1)
+  deletedAt    DateTime? @map("deleted_at")
+
+  // 关联
+  work                    Work                 @relation(fields: [workId], references: [id], onDelete: Cascade)
+  characterRelations1     CharacterRelation[]  @relation("CharacterRelation1")
+  characterRelations2     CharacterRelation[]  @relation("CharacterRelation2")
+
+  @@index([workId])
+  @@index([workId, name])
+  @@map("characters")
+}
+
+model CharacterRelation {
+  id             String   @id @default(uuid())
+  workId         String   @map("work_id")
+  characterId1   String   @map("character_id_1")
+  characterId2   String   @map("character_id_2")
+  relationType   String   @map("relation_type") // friend, enemy, lover, family, teacher_student, other
+  description    String?  @db.Text
+  startChapter   Int?     @map("start_chapter")
+  endChapter     Int?     @map("end_chapter")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  version        Int      @default(1)
+
+  // 关联
+  character1 Character @relation("CharacterRelation1", fields: [characterId1], references: [id], onDelete: Cascade)
+  character2 Character @relation("CharacterRelation2", fields: [characterId2], references: [id], onDelete: Cascade)
+
+  @@index([workId])
+  @@index([characterId1, characterId2])
+  @@map("character_relations")
+}
+
+model Outline {
+  id               String   @id @default(uuid())
+  workId           String   @map("work_id")
+  chapterId        String?  @unique @map("chapter_id")
+  chapterNumber    Int      @map("chapter_number")
+  title            String?
+  summary          String?  @db.Text
+  characters       Json     @default("[]")
+  events           Json     @default("[]")
+  foreshadowing    Json     @default("[]")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  version          Int      @default(1)
+
+  // 关联
+  work     Work     @relation(fields: [workId], references: [id], onDelete: Cascade)
+  chapter  Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  @@index([workId])
+  @@index([workId, chapterNumber])
+  @@map("outlines")
+}
+
+// ============================================
+// 写作目标与记录
+// ============================================
+
+model WritingGoal {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  workId        String?  @map("work_id")
+  goalType      String   @map("goal_type") // daily_word_count, weekly_chapter, monthly_word
+  targetValue   Int      @map("target_value")
+  currentValue  Int      @default(0) @map("current_value")
+  period        String   // daily, weekly, monthly
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime @map("end_date") @db.Date
+  status        String   @default("active") // active, completed, failed
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work Work? @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, period, startDate])
+  @@map("writing_goals")
+}
+
+model WritingRecord {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  workId           String?  @map("work_id")
+  date             DateTime @db.Date
+  wordCount        Int      @default(0) @map("word_count")
+  writingDuration  Int      @default(0) @map("writing_duration") // 秒
+  chaptersWritten  Int      @default(0) @map("chapters_written")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id])
+  work Work? @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([workId, date])
+  @@map("writing_records")
+}
+
+// ============================================
+// 平台对接
+// ============================================
+
+model PlatformAccount {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  platform        String   // qidian, fanqie, jinjiang
+  platformUserId  String   @map("platform_user_id")
+  platformUsername String  @map("platform_username")
+  accessToken     String?  @map("access_token") // 加密存储
+  refreshToken    String?  @map("refresh_token") // 加密存储
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([userId])
+  @@map("platform_accounts")
+}
+
+// ============================================
+// 同步与日志
+// ============================================
+
+model SyncLog {
+  id             String   @id @default() @db.Uuid
+  userId         String   @map("user_id")
+  clientId       String   @map("client_id")
+  syncType       String   @map("sync_type") // push, pull
+  changesCount   Int      @default(0) @map("changes_count")
+  conflictsCount Int      @default(0) @map("conflicts_count")
+  durationMs     Int?     @map("duration_ms")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("sync_logs")
+}
+
+model SecurityLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  event      String   // login_success, login_failed, token_refresh, password_change
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // 关联
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+  @@map("security_logs")
+}
