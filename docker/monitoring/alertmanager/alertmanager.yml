@@ -1,0 +1,89 @@
+global:
+  # SMTP 配置（邮件告警）
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alertmanager@novel-writer.com'
+  smtp_auth_username: 'alertmanager@novel-writer.com'
+  smtp_auth_password: 'your-password'
+  smtp_require_tls: true
+
+  # Slack 配置（可选）
+  # slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+# 告警路由
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'team-email'
+  routes:
+    # 严重告警 - 立即通知
+    - match:
+        severity: critical
+      receiver: 'team-email-critical'
+      continue: true
+
+    # 警告告警 - 批量通知
+    - match:
+        severity: warning
+      receiver: 'team-email'
+
+    # 数据库告警
+    - match:
+        alertname: DatabaseConnectionFailed
+      receiver: 'dba-team'
+
+    # AI 功能告警
+    - match_re:
+        alertname: (SlowAIResponse|HighAIErrorRate)
+      receiver: 'ai-team'
+
+# 接收器配置
+receivers:
+  - name: 'team-email'
+    email_configs:
+      - to: 'team@novel-writer.com'
+        send_resolved: true
+        headers:
+          Subject: '[Alert] {{ .GroupLabels.alertname }}'
+
+  - name: 'team-email-critical'
+    email_configs:
+      - to: 'team@novel-writer.com,oncall@novel-writer.com'
+        send_resolved: true
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+
+  - name: 'dba-team'
+    email_configs:
+      - to: 'dba@novel-writer.com'
+        send_resolved: true
+
+  - name: 'ai-team'
+    email_configs:
+      - to: 'ai-team@novel-writer.com'
+        send_resolved: true
+
+  # Slack 接收器（可选）
+  # - name: 'slack-notifications'
+  #   slack_configs:
+  #     - channel: '#alerts'
+  #       send_resolved: true
+  #       title: '{{ .GroupLabels.alertname }}'
+  #       text: '{{ .CommonAnnotations.description }}'
+
+# 告警抑制规则
+inhibit_rules:
+  # 数据库连接失败时，抑制其他数据库相关告警
+  - source_match:
+      alertname: 'DatabaseConnectionFailed'
+    target_match_re:
+      alertname: '(HighDatabaseConnections|SlowQueries)'
+    equal: ['alertname']
+
+  # 系统严重故障时，抑制应用层告警
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']

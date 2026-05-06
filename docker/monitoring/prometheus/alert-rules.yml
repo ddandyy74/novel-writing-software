@@ -1,0 +1,161 @@
+groups:
+  - name: api-alerts
+    interval: 30s
+    rules:
+      # API 错误率告警
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m])) 
+          / 
+          sum(rate(http_request_duration_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 错误率过高"
+          description: "API 错误率超过 5%，当前值: {{ $value | humanizePercentage }}"
+
+      # 响应时间告警
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 响应时间过长"
+          description: "P99 响应时间超过 3 秒，当前值: {{ $value | humanizeDuration }}"
+
+      # 请求速率下降
+      - alert: LowRequestRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count[5m])) < 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 请求速率过低"
+          description: "可能服务出现故障，当前请求速率: {{ $value }} req/s"
+
+  - name: database-alerts
+    interval: 30s
+    rules:
+      # 数据库连接失败
+      - alert: DatabaseConnectionFailed
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "数据库连接失败"
+          description: "PostgreSQL 数据库无法连接"
+
+      # 数据库连接数过多
+      - alert: HighDatabaseConnections
+        expr: |
+          pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "数据库连接数过多"
+          description: "数据库连接数超过 80%，当前值: {{ $value | humanizePercentage }}"
+
+      # 慢查询
+      - alert: SlowQueries
+        expr: |
+          rate(pg_stat_statements_mean_exec_time_seconds[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "数据库慢查询"
+          description: "检测到平均查询时间超过 1 秒"
+
+  - name: redis-alerts
+    interval: 30s
+    rules:
+      # Redis 连接失败
+      - alert: RedisConnectionFailed
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis 连接失败"
+          description: "Redis 服务无法连接"
+
+      # Redis 内存使用过高
+      - alert: HighRedisMemory
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis 内存使用过高"
+          description: "Redis 内存使用超过 90%，当前值: {{ $value | humanizePercentage }}"
+
+  - name: system-alerts
+    interval: 30s
+    rules:
+      # 磁盘使用过高
+      - alert: HighDiskUsage
+        expr: |
+          (node_filesystem_size_bytes - node_filesystem_free_bytes) 
+          / node_filesystem_size_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "磁盘使用过高"
+          description: "磁盘使用超过 80%，当前值: {{ $value | humanizePercentage }}"
+
+      # 内存使用过高
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "内存使用过高"
+          description: "内存使用超过 90%，当前值: {{ $value | humanizePercentage }}"
+
+      # CPU 使用过高
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU 使用过高"
+          description: "CPU 使用超过 80%，当前值: {{ $value | humanize }}%"
+
+  - name: ai-feature-alerts
+    interval: 30s
+    rules:
+      # AI 功能响应时间过长
+      - alert: SlowAIResponse
+        expr: |
+          histogram_quantile(0.95, sum(rate(ai_request_duration_seconds_bucket[5m])) by (le)) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI 功能响应时间过长"
+          description: "AI 功能 P95 响应时间超过 10 秒，当前值: {{ $value | humanizeDuration }}"
+
+      # AI 功能错误率过高
+      - alert: HighAIErrorRate
+        expr: |
+          sum(rate(ai_request_errors_total[5m])) 
+          / 
+          sum(rate(ai_request_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI 功能错误率过高"
+          description: "AI 功能错误率超过 10%，当前值: {{ $value | humanizePercentage }}"

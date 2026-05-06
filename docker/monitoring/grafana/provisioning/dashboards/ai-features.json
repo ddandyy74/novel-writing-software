@@ -1,0 +1,147 @@
+{
+  "dashboard": {
+    "title": "Novel Writer - AI Features",
+    "tags": ["ai", "features", "novel-writer"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "AI Request Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(ai_request_total[5m])) by (feature)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "reqps", "label": "Requests/s"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "AI Error Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(ai_request_errors_total[5m])) / sum(rate(ai_request_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 5},
+                {"color": "red", "value": 10}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "AI Response Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(ai_request_duration_seconds_bucket[5m])) by (le, feature))",
+            "legendFormat": "P50 - {{ feature }}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(ai_request_duration_seconds_bucket[5m])) by (le, feature))",
+            "legendFormat": "P95 - {{ feature }}",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(ai_request_duration_seconds_bucket[5m])) by (le, feature))",
+            "legendFormat": "P99 - {{ feature }}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Time"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "AI Features Usage",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(ai_request_total) by (feature)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "AI Request Duration by Feature",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(ai_request_duration_seconds_bucket[5m])) by (le, feature)",
+            "format": "heatmap",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "tsbuckets"
+      },
+      {
+        "title": "AI Tokens Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(ai_tokens_used_total[5m])) by (type)",
+            "legendFormat": "{{ type }} tokens/s",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "AI Features - Daily Active Users",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "count(count_values(\"user\", ai_request_total)) by (feature)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "AI Cost Estimation",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "sum(ai_cost_dollars_total)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "decimals": 2
+          }
+        }
+      }
+    ],
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s"
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "dashboard": {
+    "title": "Novel Writer - API Performance",
+    "tags": ["api", "performance", "novel-writer"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count[5m]))",
+            "legendFormat": "Total Requests/s",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"2..\"}[5m]))",
+            "legendFormat": "Success Requests/s",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"5..\"}[5m]))",
+            "legendFormat": "Error Requests/s",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "reqps", "label": "Requests/s"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Error Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Response Time (P50, P95, P99)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Time"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Request Duration by Endpoint",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_bucket[5m])) by (le)",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "tsbuckets"
+      },
+      {
+        "title": "Active Connections",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "process_open_fds",
+            "legendFormat": "Open File Descriptors",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "HTTP Status Codes",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"2..\"}[5m]))",
+            "legendFormat": "2xx",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"4..\"}[5m]))",
+            "legendFormat": "4xx",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_request_duration_seconds_count{status=~\"5..\"}[5m]))",
+            "legendFormat": "5xx",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "title": "API Endpoints - Top 10 Slowest",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "topk(10, histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s"
+  }
+}

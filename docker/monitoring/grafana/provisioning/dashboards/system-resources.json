@@ -1,0 +1,161 @@
+{
+  "dashboard": {
+    "title": "Novel Writer - System Resources",
+    "tags": ["system", "cpu", "memory", "disk"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "{{ instance }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "CPU %"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+            "legendFormat": "Memory Used %",
+            "refId": "A"
+          },
+          {
+            "expr": "node_memory_MemTotal_bytes",
+            "legendFormat": "Total Memory",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Memory %"},
+          {"format": "bytes"}
+        ]
+      },
+      {
+        "title": "Disk Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "(node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100",
+            "legendFormat": "{{ mountpoint }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Disk %"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Disk I/O",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(node_disk_read_bytes_total[5m])",
+            "legendFormat": "Read - {{ device }}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_disk_written_bytes_total[5m])",
+            "legendFormat": "Write - {{ device }}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "Bps", "label": "Bytes/s"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Network Traffic",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m])",
+            "legendFormat": "Receive - {{ interface }}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
+            "legendFormat": "Transmit - {{ interface }}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "Bps", "label": "Bytes/s"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "System Load",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "node_load1",
+            "legendFormat": "Load 1m",
+            "refId": "A"
+          },
+          {
+            "expr": "node_load5",
+            "legendFormat": "Load 5m",
+            "refId": "B"
+          },
+          {
+            "expr": "node_load15",
+            "legendFormat": "Load 15m",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "title": "Container CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]) * 100",
+            "legendFormat": "{{ name }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "CPU %"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Container Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name!=\"\"}",
+            "legendFormat": "{{ name }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Memory"},
+          {"format": "short"}
+        ]
+      }
+    ],
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s"
+  }
+}

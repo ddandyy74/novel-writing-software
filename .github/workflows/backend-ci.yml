@@ -1,0 +1,183 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/backend/**'
+      - 'src/ai/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/backend/**'
+      - 'src/ai/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  # 代码检查
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: src/backend
+        run: npm ci
+        
+      - name: Run ESLint
+        working-directory: src/backend
+        run: npm run lint
+        
+      - name: Run TypeScript type check
+        working-directory: src/backend
+        run: npx tsc --noEmit
+        
+  # 单元测试
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: novel_writer_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: src/backend
+        run: npm ci
+        
+      - name: Generate Prisma Client
+        working-directory: src/backend
+        run: npm run prisma:generate
+        
+      - name: Run database migrations
+        working-directory: src/backend
+        run: npm run prisma:migrate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/novel_writer_test?schema=public
+          
+      - name: Run unit tests
+        working-directory: src/backend
+        run: npm run test:coverage
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/novel_writer_test?schema=public
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./src/backend/coverage/coverage-final.json
+          flags: backend
+          fail_ci_if_error: false
+          
+  # 构建
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/backend/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: src/backend
+        run: npm ci
+        
+      - name: Generate Prisma Client
+        working-directory: src/backend
+        run: npm run prisma:generate
+        
+      - name: Build application
+        working-directory: src/backend
+        run: npm run build
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: src/backend/dist/
+          retention-days: 7
+          
+  # 安全扫描
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Run npm audit
+        working-directory: src/backend
+        run: npm audit --audit-level=high
+        continue-on-error: true
+        
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=src/backend/package.json

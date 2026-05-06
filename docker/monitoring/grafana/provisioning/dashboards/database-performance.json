@@ -1,0 +1,160 @@
+{
+  "dashboard": {
+    "title": "Novel Writer - Database Performance",
+    "tags": ["database", "postgresql", "redis"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "PostgreSQL - Active Connections",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count",
+            "legendFormat": "{{ state }}",
+            "refId": "A"
+          },
+          {
+            "expr": "pg_settings_max_connections",
+            "legendFormat": "Max Connections",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "title": "PostgreSQL - Query Duration",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(pg_stat_statements_mean_exec_time_seconds[5m])",
+            "legendFormat": "Mean Query Time",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Time"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "PostgreSQL - Transactions",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(pg_stat_database_xact_commit[5m])",
+            "legendFormat": "Commits/s",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(pg_stat_database_xact_rollback[5m])",
+            "legendFormat": "Rollbacks/s",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "title": "PostgreSQL - Cache Hit Ratio",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Redis - Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Used Memory",
+            "refId": "A"
+          },
+          {
+            "expr": "redis_memory_max_bytes",
+            "legendFormat": "Max Memory",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Memory"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "title": "Redis - Operations/s",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "rate(redis_commands_processed_total[5m])",
+            "legendFormat": "Commands/s",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(redis_keyspace_hits_total[5m])",
+            "legendFormat": "Cache Hits/s",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(redis_keyspace_misses_total[5m])",
+            "legendFormat": "Cache Misses/s",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "title": "Redis - Connected Clients",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "legendFormat": "Connected Clients",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "title": "Redis - Key Count",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "redis_db_keys",
+            "legendFormat": "Keys in DB {{ db }}",
+            "refId": "A"
+          },
+          {
+            "expr": "redis_db_keys_expiring",
+            "legendFormat": "Keys Expiring",
+            "refId": "B"
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s"
+  }
+}

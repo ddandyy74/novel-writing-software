@@ -1,0 +1,59 @@
+apiVersion: 1
+
+datasources:
+  # Prometheus 数据源
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+
+  # Loki 数据源
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - name: 'TraceID'
+          matcherRegex: '"traceId":"(\w+)"'
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+
+  # PostgreSQL 数据源
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: novel_writer
+    user: postgres
+    editable: false
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+      postgresVersion: 1400
+      timescaledb: false
+    secureJsonData:
+      password: your-postgres-password
+
+  # Redis 数据源
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    editable: false
+    jsonData:
+      client: standalone
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
