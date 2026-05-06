@@ -12,7 +12,80 @@ Linux:   ~/.config/opencode/agents/
 
 ---
 
+## 安装方法
+
+### 方法一：从 GitHub 安装（推荐）
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/msitarzewski/agency-agents.git
+
+# 2. 进入目录
+cd agency-agents
+
+# 3. 运行安装脚本（需要 Git Bash）
+./convert.sh
+```
+
+脚本会自动将所有 Agent 转换并安装到 `~/.config/opencode/agents/` 目录。
+
+### 方法二：复制现有 Agent 文件（最快）
+
+从已安装的机器复制整个 `agents` 目录：
+
+```bash
+# Windows
+xcopy "C:\Users\DD\.config\opencode\agents" "C:\Users\<新用户>\.config\opencode\agents" /E /I
+
+# macOS/Linux
+cp -r ~/.config/opencode/agents/* /path/to/new/machine/.config/opencode/agents/
+```
+
+---
+
+## 配置全局 AGENTS.md（精简版）
+
+**重要**：全局 AGENTS.md 每次会话都会加载，建议只写核心规则，避免臃肿。
+
+在 `~/.config/opencode/AGENTS.md` 开头添加：
+
+```markdown
+# OpenCode 全局规则
+
+## Agent 使用
+
+已安装 30+ Agent 覆盖软件开发全流程。
+
+查看完整列表请问：**"有哪些 Agent 可以用？"**
+
+调用方式：`@agent名称 任务描述`
+
+示例：`@product-manager 帮我规划一个项目`
+```
+
+**这样每次会话只加载 <200 token，Agent 列表按需查询。**
+
+---
+
+## 验证安装
+
+安装完成后，在 OpenCode 中运行：
+
+```
+有哪些 Agent 可以用？
+```
+
+或者直接使用：
+```
+@product-manager 帮我规划一个项目
+```
+
+---
+
 ## 已安装的 Agent（30 个）
+
+<details>
+<summary>点击展开完整列表</summary>
 
 ### 项目规划（3 个）
 | Agent | 用途 |
@@ -84,84 +157,13 @@ Linux:   ~/.config/opencode/agents/
 |-------|------|
 | `@document-generator` | PDF/PPTX/DOCX/XLSX 生成 |
 
----
-
-## 安装方法
-
-### 方法一：从 GitHub 安装（推荐）
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/msitarzewski/agency-agents.git
-
-# 2. 进入目录
-cd agency-agents
-
-# 3. 运行安装脚本（需要 Git Bash）
-./convert.sh
-```
-
-脚本会自动将所有 Agent 转换并安装到 `~/.config/opencode/agents/` 目录。
-
-### 方法二：手动安装
-
-如果自动脚本失败，可以手动创建 Agent 文件：
-
-1. 创建目录：
-```bash
-mkdir -p ~/.config/opencode/agents
-```
-
-2. 创建 Agent 文件（每个 Agent 一个 `.md` 文件）：
-
-文件格式示例：
-```markdown
----
-name: product-manager
-description: 全流程产品管理、PRD、路线图、GTM
-mode: subagent
-color: blue
----
-
-# Product Manager
-
-[Agent 的详细 prompt 内容]
-```
-
-### 方法三：复制现有 Agent 文件
-
-从已安装的机器复制整个 `agents` 目录：
-
-```bash
-# Windows
-xcopy "C:\Users\DD\.config\opencode\agents" "C:\Users\<新用户>\.config\opencode\agents" /E /I
-
-# macOS/Linux
-cp -r ~/.config/opencode/agents/* /path/to/new/machine/.config/opencode/agents/
-```
-
----
-
-## 验证安装
-
-安装完成后，在 OpenCode 中运行：
-
-```
-有哪些 Agent 可以用？
-```
-
-或者直接使用：
-```
-@product-manager 帮我规划一个项目
-```
-
-如果 Agent 列表正确显示或能成功调用，说明安装成功。
+</details>
 
 ---
 
 ## 项目级 Skills
 
-除了全局 Agent，本项目还包含项目级 Skills（自动触发）：
+本项目包含项目级 Skills（自动触发），会随项目复制自动生效：
 
 位置：`项目目录/.opencode/skills/`
 
@@ -176,37 +178,28 @@ cp -r ~/.config/opencode/agents/* /path/to/new/machine/.config/opencode/agents/
 | `testing` | "测试"、"API测试" |
 | `deployment` | "部署"、"CI/CD"、"发布" |
 
-这些 Skills 会随项目复制自动生效，无需额外安装。
-
----
-
-## 完整文件列表
-
-需要复制的全局配置文件：
-
-```
-~/.config/opencode/
-├── agents/                          # 30 个 Agent 文件
-│   ├── product-manager.md
-│   ├── software-architect.md
-│   ├── backend-architect.md
-│   ├── frontend-developer.md
-│   ├── ... (共 30 个)
-├── AGENTS.md                        # 全局规则 + Agent 列表
-├── AGENTS-INDEX.md                  # Agent 详细速查表
-└── skills/
-    └── agent-index/
-        └── SKILL.md                 # Agent 索引 Skill
-```
-
 ---
 
 ## 快速迁移清单
 
-在新机器上开发本项目，需要：
+在新机器上开发本项目，只需：
 
 - [ ] 安装 OpenCode
-- [ ] 安装 30 个 Agent（方法一或方法三）
-- [ ] 复制 `AGENTS.md` 和 `AGENTS-INDEX.md`
+- [ ] 复制 `agents/` 目录（方法二最快）
+- [ ] 更新全局 `AGENTS.md`（添加简短引导即可）
 - [ ] 复制项目目录（包含 `.opencode/skills/`）
-- [ ] 配置 Mem0（如果使用长期记忆）
+
+**无需复制 `AGENTS-INDEX.md`，Agent 列表按需查询即可。**
+
+---
+
+## 文件架构说明
+
+| 文件 | 加载时机 | 内容 |
+|------|---------|------|
+| 全局 `AGENTS.md` | **每次会话** | 核心规则 + 简短引导（<200 token） |
+| `agent-index` Skill | **用户问时** | 完整 Agent 列表（按需加载） |
+| 项目级 `AGENTS.md` | **打开项目时** | 项目特定工作流程 |
+| 项目级 Skills | **任务匹配时** | 自动触发对应 Agent |
+
+**这样设计既不臃肿，又保证功能完整。**
