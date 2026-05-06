@@ -3,6 +3,7 @@ import { authRoutes } from '../controllers/auth.controller';
 import { userRoutes } from '../controllers/user.controller';
 import { workRoutes } from '../controllers/work.controller';
 import { syncRoutes } from '../controllers/sync.controller';
+import { aiRoutes } from '../controllers/ai.controller';
 
 /**
  * 注册所有路由
@@ -22,6 +23,9 @@ export async function registerRoutes(app: FastifyInstance) {
 
       // 同步路由 /api/v1/sync/*
       instance.register(syncRoutes, { prefix: '/sync' });
+
+      // AI 功能路由 /api/v1/ai/*
+      instance.register(aiRoutes, { prefix: '/ai' });
 
       // 健康检查
       instance.get('/health', async (request, reply) => {

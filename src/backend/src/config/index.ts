@@ -53,6 +53,33 @@ export const config = {
   cors: {
     origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
   },
+
+  // AI 服务配置
+  ai: {
+    // OpenAI API
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiBaseUrl: process.env.OPENAI_BASE_URL,
+
+    // Anthropic API
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+
+    // Stable Diffusion API
+    stabilityApiKey: process.env.STABILITY_API_KEY,
+    stabilityBaseUrl: process.env.STABILITY_BASE_URL,
+
+    // 火山引擎 API
+    volcengineApiKey: process.env.VOLCENGINE_API_KEY,
+
+    // 本地模型配置
+    localModelPath: process.env.LOCAL_MODEL_PATH,
+
+    // 限流配置
+    rateLimit: {
+      spellCheck: parseInt(process.env.AI_SPELL_CHECK_RATE_LIMIT || '100', 10),
+      outlineGen: parseInt(process.env.AI_OUTLINE_GEN_RATE_LIMIT || '50', 10),
+      coverGen: parseInt(process.env.AI_COVER_GEN_RATE_LIMIT || '10', 10),
+    },
+  },
 };
 
 export type Config = typeof config;
