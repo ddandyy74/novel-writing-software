@@ -1,13 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { errorResponse, ErrorCodes, ErrorMessages } from '../utils/response';
+import { SessionService } from '../services/session.service';
 
-/**
- * 认证中间件
- * 验证 JWT Token
- */
 export async function authMiddleware(request: FastifyRequest, reply: FastifyReply) {
   try {
-    // 从请求头获取 token
     const authorization = request.headers.authorization;
     
     if (!authorization || !authorization.startsWith('Bearer ')) {
@@ -18,11 +14,21 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
 
     const token = authorization.substring(7);
 
-    // 验证 token
     const decoded = await request.server.jwt.verify(token);
+    const user = decoded as any;
     
-    // 将用户信息附加到请求对象
-    request.user = decoded as any;
+    if (user.sessionId) {
+      const isValidSession = await SessionService.validateSession(user.userId, user.sessionId);
+      if (!isValidSession) {
+        return reply.status(401).send(
+          errorResponse(ErrorCodes.AUTH_TOKEN_INVALID, '会话已失效，请重新登录')
+        );
+      }
+      
+      await SessionService.updateActivity(user.userId, user.sessionId);
+    }
+    
+    request.user = user;
   } catch (error: any) {
     if (error.name === 'TokenExpiredError') {
       return reply.status(401).send(
@@ -36,10 +42,6 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
   }
 }
 
-/**
- * 可选认证中间件
- * 如果提供了 token 则验证，否则继续
- */
 export async function optionalAuthMiddleware(request: FastifyRequest, reply: FastifyReply) {
   const authorization = request.headers.authorization;
   
@@ -49,14 +51,10 @@ export async function optionalAuthMiddleware(request: FastifyRequest, reply: Fas
       const decoded = await request.server.jwt.verify(token);
       request.user = decoded as any;
     } catch (error) {
-      // 忽略错误，继续执行
     }
   }
 }
 
-/**
- * 权限检查中间件工厂
- */
 export function requirePermission(permission: string) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user;
@@ -67,7 +65,6 @@ export function requirePermission(permission: string) {
       );
     }
 
-    // 权限定义
     const permissions: Record<string, string[]> = {
       user: ['work:create', 'work:edit', 'work:delete', 'chapter:*', 'ai:basic'],
       author: ['work:*', 'chapter:*', 'ai:*', 'publish'],
@@ -76,7 +73,6 @@ export function requirePermission(permission: string) {
 
     const userPermissions = permissions[user.role] || [];
     
-    // 检查权限
     const hasPermission = userPermissions.some(p => 
       p === '*' || p === permission || 
       (p.endsWith(':*') && permission.startsWith(p.slice(0, -1)))

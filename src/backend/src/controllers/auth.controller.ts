@@ -1,18 +1,20 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { AuthService } from '../services/auth.service';
 import { successResponse, errorResponse, ErrorCodes } from '../utils/response';
 import { registerSchema, loginSchema, refreshTokenSchema } from '../models/schemas';
 import { validateBody } from '../middleware/validation';
 import { rateLimitMiddleware } from '../middleware/redis';
 
-/**
- * 用户注册
- */
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   try {
     const data = registerSchema.parse(request.body);
+    
+    const metadata = {
+      userAgent: request.headers['user-agent'],
+      ipAddress: request.ip,
+    };
 
-    const result = await AuthService.register(data, request.server);
+    const result = await AuthService.register(data, request.server, metadata);
 
     return reply.status(201).send(
       successResponse({
@@ -21,6 +23,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
         nickname: result.user.nickname,
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
+        sessionId: result.sessionId,
       }, '注册成功')
     );
   } catch (error: any) {
@@ -33,14 +36,16 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-/**
- * 用户登录
- */
 export async function login(request: FastifyRequest, reply: FastifyReply) {
   try {
     const data = loginSchema.parse(request.body);
+    
+    const metadata = {
+      userAgent: request.headers['user-agent'],
+      ipAddress: request.ip,
+    };
 
-    const result = await AuthService.login(data.email, data.password, request.server);
+    const result = await AuthService.login(data.email, data.password, request.server, metadata);
 
     return reply.send(
       successResponse({
@@ -50,6 +55,7 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
         expiresIn: result.expiresIn,
+        sessionId: result.sessionId,
       })
     );
   } catch (error: any) {
@@ -69,20 +75,23 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-/**
- * 刷新 Token
- */
 export async function refreshToken(request: FastifyRequest, reply: FastifyReply) {
   try {
     const data = refreshTokenSchema.parse(request.body);
+    
+    const metadata = {
+      userAgent: request.headers['user-agent'],
+      ipAddress: request.ip,
+    };
 
-    const result = await AuthService.refreshToken(data.refreshToken, request.server);
+    const result = await AuthService.refreshToken(data.refreshToken, request.server, metadata);
 
     return reply.send(
       successResponse({
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
         expiresIn: result.expiresIn,
+        sessionId: result.sessionId,
       })
     );
   } catch (error: any) {
@@ -92,46 +101,100 @@ export async function refreshToken(request: FastifyRequest, reply: FastifyReply)
   }
 }
 
-/**
- * 登出
- */
 export async function logout(request: FastifyRequest, reply: FastifyReply) {
   const userId = request.user?.userId;
+  const sessionId = request.user?.sessionId;
   const body = request.body as { refreshToken?: string } | undefined;
 
   if (userId) {
-    await AuthService.logout(userId, body?.refreshToken);
+    await AuthService.logout(userId, sessionId, body?.refreshToken);
   }
 
   return reply.send(successResponse(null, '登出成功'));
 }
 
-/**
- * 认证路由
- */
+export async function getSessions(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+
+  if (!userId) {
+    return reply.status(401).send(
+      errorResponse(ErrorCodes.AUTH_TOKEN_INVALID, '未认证')
+    );
+  }
+
+  const sessions = await AuthService.getSessions(userId);
+
+  return reply.send(successResponse(sessions));
+}
+
+export async function revokeSession(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+  const params = request.params as { sessionId: string };
+
+  if (!userId) {
+    return reply.status(401).send(
+      errorResponse(ErrorCodes.AUTH_TOKEN_INVALID, '未认证')
+    );
+  }
+
+  const success = await AuthService.revokeSession(userId, params.sessionId);
+
+  if (!success) {
+    return reply.status(404).send(
+      errorResponse(ErrorCodes.SYSTEM_NOT_FOUND, '会话不存在')
+    );
+  }
+
+  return reply.send(successResponse(null, '会话已撤销'));
+}
+
+export async function revokeAllSessions(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+  const currentSessionId = request.user?.sessionId;
+
+  if (!userId) {
+    return reply.status(401).send(
+      errorResponse(ErrorCodes.AUTH_TOKEN_INVALID, '未认证')
+    );
+  }
+
+  const count = await AuthService.logoutAll(userId, currentSessionId);
+
+  return reply.send(successResponse({ revokedCount: count }, '所有其他会话已撤销'));
+}
+
 export async function authRoutes(app: FastifyInstance) {
-  // 注册（限流 5次/分钟）
   app.post('/register', {
     preHandler: [rateLimitMiddleware(5, 60)],
     handler: register,
   });
 
-  // 登录（限流 5次/分钟）
   app.post('/login', {
     preHandler: [rateLimitMiddleware(5, 60)],
     handler: login,
   });
 
-  // 刷新 Token
   app.post('/refresh', {
     handler: refreshToken,
   });
 
-  // 登出（需要认证）
   app.post('/logout', {
     onRequest: [app.authenticate],
     handler: logout,
   });
-}
 
-import { FastifyInstance } from 'fastify';
+  app.get('/sessions', {
+    onRequest: [app.authenticate],
+    handler: getSessions,
+  });
+
+  app.delete('/sessions/:sessionId', {
+    onRequest: [app.authenticate],
+    handler: revokeSession,
+  });
+
+  app.delete('/sessions', {
+    onRequest: [app.authenticate],
+    handler: revokeAllSessions,
+  });
+}

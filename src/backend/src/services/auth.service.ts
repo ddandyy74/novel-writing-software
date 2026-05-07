@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { config } from '../config';
 import { generateToken } from '../utils/crypto';
 import { getRedis } from '../middleware/redis';
+import { SessionService } from './session.service';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 30 * 60;
@@ -63,9 +64,9 @@ export class AuthService {
     email: string;
     password: string;
     nickname: string;
-  }, app: FastifyInstance): Promise<{ user: User; accessToken: string; refreshToken: string }> {
+  }, app: FastifyInstance, metadata?: { userAgent?: string; ipAddress?: string }): Promise<{ user: User; accessToken: string; refreshToken: string; sessionId: string }> {
     const user = await UserService.create(data);
-    const tokens = await this.generateTokens(user, app);
+    const tokens = await this.generateTokens(user, app, metadata);
 
     return {
       user,
@@ -77,7 +78,8 @@ export class AuthService {
     email: string,
     password: string,
     app: FastifyInstance,
-  ): Promise<{ user: User; accessToken: string; refreshToken: string; expiresIn: number }> {
+    metadata?: { userAgent?: string; ipAddress?: string }
+  ): Promise<{ user: User; accessToken: string; refreshToken: string; expiresIn: number; sessionId: string }> {
     await this.checkAccountLock(email);
     
     const user = await UserService.findByEmail(email);
@@ -90,7 +92,7 @@ export class AuthService {
 
     await this.clearLoginFailures(email);
 
-    const tokens = await this.generateTokens(user, app);
+    const tokens = await this.generateTokens(user, app, metadata);
 
     return {
       user,
@@ -99,11 +101,14 @@ export class AuthService {
     };
   }
 
-  static async generateTokens(user: User, app: FastifyInstance): Promise<{ accessToken: string; refreshToken: string }> {
+  static async generateTokens(user: User, app: FastifyInstance, metadata?: { userAgent?: string; ipAddress?: string }): Promise<{ accessToken: string; refreshToken: string; sessionId: string }> {
+    const sessionId = generateToken(16);
+    
     const accessToken = app.jwt.sign({
       userId: user.id,
       email: user.email,
       role: user.role,
+      sessionId,
     }, {
       expiresIn: config.jwt.expiresIn,
     });
@@ -116,11 +121,14 @@ export class AuthService {
         `refresh-token:${refreshToken}`,
         JSON.stringify({
           userId: user.id,
+          sessionId,
           createdAt: Date.now(),
         }),
         'EX',
         7 * 24 * 3600
       );
+
+      await SessionService.createSession(user.id, sessionId, metadata);
     } catch (error) {
       console.error('Failed to store refresh token in Redis:', error);
     }
@@ -128,14 +136,16 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
+      sessionId,
     };
   }
 
   static async refreshToken(
     refreshToken: string,
     app: FastifyInstance,
-  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-    let tokenData: { userId: string; createdAt: number };
+    metadata?: { userAgent?: string; ipAddress?: string }
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number; sessionId: string }> {
+    let tokenData: { userId: string; sessionId: string; createdAt: number };
     
     try {
       const redis = getRedis();
@@ -146,8 +156,13 @@ export class AuthService {
       }
       
       tokenData = JSON.parse(data);
+      
+      const isValidSession = await SessionService.validateSession(tokenData.userId, tokenData.sessionId);
+      if (!isValidSession) {
+        throw new Error('会话已失效，请重新登录');
+      }
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Refresh Token')) {
+      if (error instanceof Error && (error.message.includes('Refresh Token') || error.message.includes('会话'))) {
         throw error;
       }
       throw new Error('认证服务暂时不可用，请稍后重试');
@@ -161,11 +176,12 @@ export class AuthService {
     try {
       const redis = getRedis();
       await redis.del(`refresh-token:${refreshToken}`);
+      await SessionService.revokeSession(tokenData.userId, tokenData.sessionId);
     } catch (error) {
       console.error('Failed to delete old refresh token:', error);
     }
 
-    const tokens = await this.generateTokens(user, app);
+    const tokens = await this.generateTokens(user, app, metadata);
     
     return {
       ...tokens,
@@ -173,25 +189,28 @@ export class AuthService {
     };
   }
 
-  static async logout(userId: string, refreshToken?: string): Promise<void> {
-    if (!refreshToken) return;
-
+  static async logout(userId: string, sessionId?: string, refreshToken?: string): Promise<void> {
     try {
-      const redis = getRedis();
-      const data = await redis.get(`refresh-token:${refreshToken}`);
-      
-      if (data) {
-        const tokenData = JSON.parse(data);
-        if (tokenData.userId === userId) {
-          await redis.del(`refresh-token:${refreshToken}`);
+      if (refreshToken) {
+        const redis = getRedis();
+        const data = await redis.get(`refresh-token:${refreshToken}`);
+        
+        if (data) {
+          const tokenData = JSON.parse(data);
+          if (tokenData.userId === userId) {
+            await redis.del(`refresh-token:${refreshToken}`);
+            await SessionService.revokeSession(userId, tokenData.sessionId);
+          }
         }
+      } else if (sessionId) {
+        await SessionService.revokeSession(userId, sessionId);
       }
     } catch (error) {
       console.error('Failed to logout:', error);
     }
   }
 
-  static async logoutAll(userId: string): Promise<void> {
+  static async logoutAll(userId: string, currentSessionId?: string): Promise<number> {
     try {
       const redis = getRedis();
       const keys = await redis.keys(`refresh-token:*`);
@@ -205,8 +224,19 @@ export class AuthService {
           }
         }
       }
+
+      return await SessionService.revokeAllSessions(userId, currentSessionId);
     } catch (error) {
       console.error('Failed to logout all sessions:', error);
+      return 0;
     }
+  }
+
+  static async getSessions(userId: string) {
+    return SessionService.getUserSessions(userId);
+  }
+
+  static async revokeSession(userId: string, sessionId: string): Promise<boolean> {
+    return SessionService.revokeSession(userId, sessionId);
   }
 }
