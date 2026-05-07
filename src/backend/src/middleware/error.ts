@@ -1,16 +1,13 @@
 import { FastifyError, FastifyRequest, FastifyReply } from 'fastify';
 import { errorResponse, ErrorCodes } from '../utils/response';
 import { ZodError } from 'zod';
+import { sanitizeForLog } from '../utils/helpers';
 
-/**
- * 全局错误处理中间件
- */
 export async function errorHandler(
   error: FastifyError,
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  // 记录错误日志
   request.log.error({
     error: {
       message: error.message,
@@ -20,8 +17,8 @@ export async function errorHandler(
     request: {
       method: request.method,
       url: request.url,
-      headers: request.headers,
-      body: request.body,
+      headers: sanitizeForLog(request.headers),
+      body: sanitizeForLog(request.body),
     },
   });
 

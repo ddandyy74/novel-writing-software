@@ -31,15 +31,10 @@ export class AuthService {
     app: FastifyInstance,
   ): Promise<{ user: User; accessToken: string; refreshToken: string; expiresIn: number }> {
     const user = await UserService.findByEmail(email);
+    const isValid = user && await UserService.validatePassword(user, password);
 
-    if (!user) {
-      throw new Error('用户不存在');
-    }
-
-    const isValid = await UserService.validatePassword(user, password);
-
-    if (!isValid) {
-      throw new Error('密码错误');
+    if (!user || !isValid) {
+      throw new Error('邮箱或密码错误');
     }
 
     const tokens = await this.generateTokens(user);

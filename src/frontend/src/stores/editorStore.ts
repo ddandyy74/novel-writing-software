@@ -25,12 +25,39 @@ interface EditorState {
   markAsUnsaved: () => void;
 }
 
-// 统计字数
+interface WordCountResult {
+  chinese: number;
+  english: number;
+  punctuation: number;
+  total: number;
+}
+
 const countWords = (text: string): number => {
-  // 移除空格和标点,统计汉字和英文单词
-  const chinese = text.match(/[\u4e00-\u9fa5]/g) || [];
-  const english = text.match(/[a-zA-Z]+/g) || [];
-  return chinese.length + english.length;
+  if (!text) return 0;
+  
+  const cleanText = text.replace(/\s+/g, '');
+  
+  const chinese = (cleanText.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const english = (cleanText.match(/[a-zA-Z]+/g) || []).length;
+  const punctuation = (cleanText.match(/[，。！？；：""''【】《》\-\—\…\·、,.\!?;:\"\'\[\]<>]/g) || []).length;
+  
+  return chinese + punctuation;
+};
+
+export const countWordsDetailed = (text: string): WordCountResult => {
+  if (!text) {
+    return { chinese: 0, english: 0, punctuation: 0, total: 0 };
+  }
+  
+  const cleanText = text.replace(/\s+/g, '');
+  
+  const chinese = (cleanText.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const english = (cleanText.match(/[a-zA-Z]+/g) || []).length;
+  const punctuation = (cleanText.match(/[，。！？；：""''【】《》\-\—\…\·、,.\!?;:\"\'\[\]<>]/g) || []).length;
+  
+  const total = chinese + punctuation;
+  
+  return { chinese, english, punctuation, total };
 };
 
 export const useEditorStore = create<EditorState>()(

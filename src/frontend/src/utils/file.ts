@@ -1,7 +1,23 @@
 import { save, open } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
+import { writeTextFile, readTextFile, join, appDataDir } from '@tauri-apps/plugin-fs';
 
-// 保存文件
+function isValidFilename(filename: string): boolean {
+  if (!filename || filename.length === 0 || filename.length > 255) {
+    return false;
+  }
+  
+  const dangerousPattern = /(\.\.|[<>:"\/\\|?*]|\x00|\n|\r)/;
+  if (dangerousPattern.test(filename)) {
+    return false;
+  }
+  
+  if (filename.startsWith('.') || filename.endsWith('.')) {
+    return false;
+  }
+  
+  return true;
+}
+
 export async function saveFile(content: string, defaultPath?: string): Promise<boolean> {
   try {
     const filePath = await save({
@@ -20,12 +36,13 @@ export async function saveFile(content: string, defaultPath?: string): Promise<b
     }
     return false;
   } catch (error) {
-    console.error('Save file error:', error);
+    if (import.meta.env.DEV) {
+      console.error('Save file error:', error);
+    }
     return false;
   }
 }
 
-// 打开文件
 export async function openFile(): Promise<string | null> {
   try {
     const filePath = await open({
@@ -44,27 +61,27 @@ export async function openFile(): Promise<string | null> {
     }
     return null;
   } catch (error) {
-    console.error('Open file error:', error);
+    if (import.meta.env.DEV) {
+      console.error('Open file error:', error);
+    }
     return null;
   }
 }
 
-// 自动保存到本地
 export async function autoSaveToLocal(content: string, filename: string): Promise<boolean> {
   try {
-    // 保存到应用数据目录
-    const appDataDir = await getAppDataDir();
-    const filePath = `${appDataDir}/${filename}`;
+    if (!isValidFilename(filename)) {
+      throw new Error('Invalid filename');
+    }
+    
+    const appDataDirPath = await appDataDir();
+    const filePath = await join(appDataDirPath, filename);
     await writeTextFile(filePath, content);
     return true;
   } catch (error) {
-    console.error('Auto save error:', error);
+    if (import.meta.env.DEV) {
+      console.error('Auto save error:', error);
+    }
     return false;
   }
-}
-
-// 获取应用数据目录
-async function getAppDataDir(): Promise<string> {
-  // Tauri 会自动处理应用数据目录
-  return './data';
 }

@@ -1,8 +1,44 @@
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * 生成 UUID
- */
+const SENSITIVE_FIELDS = [
+  'password',
+  'newPassword',
+  'confirmPassword',
+  'oldPassword',
+  'token',
+  'accessToken',
+  'refreshToken',
+  'apiKey',
+  'api_key',
+  'secret',
+  'authorization',
+  'credential',
+  'privateKey',
+  'private_key',
+];
+
+export function sanitizeForLog(obj: any): any {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForLog(item));
+  }
+  
+  const sanitized = { ...obj };
+  
+  for (const key of Object.keys(sanitized)) {
+    const lowerKey = key.toLowerCase();
+    
+    if (SENSITIVE_FIELDS.some(field => lowerKey.includes(field.toLowerCase()))) {
+      sanitized[key] = '***REDACTED***';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeForLog(sanitized[key]);
+    }
+  }
+  
+  return sanitized;
+}
+
 export function generateId(): string {
   return uuidv4();
 }
