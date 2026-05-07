@@ -1,11 +1,16 @@
 import React, { useRef, useEffect } from 'react';
 import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { useEditorStore } from '@stores/editorStore';
-import { useThemeStore } from '@stores/themeStore';
-import { editorThemes } from '@themes/editorThemes';
+import { useEditorSettingsStore } from '@stores/editorSettingsStore';
+import { createDynamicTheme } from '@themes/editorThemes';
 import { Compartment } from '@codemirror/state';
+
+const HISTORY_CONFIG = {
+  minDepth: 1000,
+  newGroupDelay: 300,
+};
 
 interface EditorProps {
   content: string;
@@ -19,7 +24,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
   const themeCompartment = useRef(new Compartment());
   const onSaveRef = useRef(onSave);
   
-  const { theme } = useThemeStore();
+  const { fontFamily, fontSize, bgColor, lineHeight, showLineNumbers } = useEditorSettingsStore();
   const { updateCursorPosition } = useEditorStore();
 
   useEffect(() => {
@@ -35,16 +40,22 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const dynamicTheme = createDynamicTheme({
+      fontFamily,
+      fontSize,
+      bgColor,
+      lineHeight,
+      showLineNumbers,
+    });
+
     const startState = EditorState.create({
       doc: content,
       extensions: [
-        lineNumbers(),
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
-        history(),
+        showLineNumbers ? lineNumbers() : [],
+        history(HISTORY_CONFIG),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         
-        themeCompartment.current.of(editorThemes[theme]),
+        themeCompartment.current.of(dynamicTheme),
         
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -84,11 +95,19 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
 
   useEffect(() => {
     if (viewRef.current) {
+      const dynamicTheme = createDynamicTheme({
+        fontFamily,
+        fontSize,
+        bgColor,
+        lineHeight,
+        showLineNumbers,
+      });
+
       viewRef.current.dispatch({
-        effects: themeCompartment.current.reconfigure(editorThemes[theme]),
+        effects: themeCompartment.current.reconfigure(dynamicTheme),
       });
     }
-  }, [theme]);
+  }, [fontFamily, fontSize, bgColor, lineHeight, showLineNumbers]);
 
   useEffect(() => {
     if (viewRef.current) {

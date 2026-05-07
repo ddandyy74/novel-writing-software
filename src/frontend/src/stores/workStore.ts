@@ -151,7 +151,7 @@ export const useWorkStore = create<WorkState>((set, get) => ({
     set({ isLoading: true });
     const response = await api.getWork(workId);
     if (response.code === 0 && response.data) {
-      set({ currentWork: response.data as Work, isLoading: false });
+      set({ currentWork: response.data as Work, currentChapter: null, isLoading: false });
       await get().loadChapters(workId);
     } else {
       set({ isLoading: false });
@@ -209,13 +209,13 @@ export const useWorkStore = create<WorkState>((set, get) => ({
 
     if (!isAuthenticated) {
       const localChapters = useLocalWorkStore.getState().chapters.filter((c) => c.workId === workId);
-      set({ chapters: localChapters.map(convertLocalChapterToChapter) });
+      set({ chapters: localChapters.map(convertLocalChapterToChapter), currentChapter: null });
       return;
     }
 
     const response = await api.getChapters(workId);
     if (response.code === 0 && response.data) {
-      set({ chapters: response.data.items || [] });
+      set({ chapters: response.data.items || [], currentChapter: null });
     }
   },
 
@@ -271,7 +271,7 @@ export const useWorkStore = create<WorkState>((set, get) => ({
       return;
     }
 
-    const response = await api.getChapter(currentWork.id, chapterId);
+    const response = await api.getChapter(chapterId);
     if (response.code === 0 && response.data) {
       set({ currentChapter: response.data as Chapter });
     }
@@ -308,7 +308,7 @@ export const useWorkStore = create<WorkState>((set, get) => ({
       return;
     }
 
-    const response = await api.updateChapter(currentWork.id, chapterId, data);
+    const response = await api.updateChapter(chapterId, data);
     if (response.code === 0) {
       set((state) => ({
         chapters: state.chapters.map((c) => (c.id === chapterId ? { ...c, ...data } : c)),
@@ -344,7 +344,7 @@ export const useWorkStore = create<WorkState>((set, get) => ({
       return;
     }
 
-    const response = await api.deleteChapter(currentWork.id, chapterId);
+    const response = await api.deleteChapter(chapterId);
     if (response.code === 0) {
       set((state) => ({
         chapters: state.chapters.filter((c) => c.id !== chapterId),

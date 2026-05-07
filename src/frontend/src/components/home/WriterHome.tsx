@@ -26,9 +26,13 @@ interface WriterHomeProps {
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
   saved: boolean;
   onOpenWork: (workId: string) => void;
+  onRenameWork: (workId: string) => void;
+  onDeleteWork: (workId: string) => void;
   onCreateWork: () => void;
   onLogin: () => void;
   onComingSoon: (feature: string) => void;
+  onPreferences?: () => void;
+  onTrash?: () => void;
 }
 
 const WriterHome: React.FC<WriterHomeProps> = ({
@@ -39,9 +43,13 @@ const WriterHome: React.FC<WriterHomeProps> = ({
   syncStatus,
   saved,
   onOpenWork,
+  onRenameWork,
+  onDeleteWork,
   onCreateWork,
   onLogin,
   onComingSoon,
+  onPreferences,
+  onTrash,
 }) => (
   <div className="flex h-full bg-white text-slate-900">
     <GlobalSidebar
@@ -49,6 +57,7 @@ const WriterHome: React.FC<WriterHomeProps> = ({
       isAuthenticated={isAuthenticated}
       onLogin={onLogin}
       onComingSoon={onComingSoon}
+      onPreferences={onPreferences}
     />
 
     <main className="min-w-0 flex-1 overflow-auto bg-white px-10 py-6">
@@ -101,14 +110,21 @@ const WriterHome: React.FC<WriterHomeProps> = ({
           <button type="button" className="text-sm font-semibold text-slate-900 hover:text-blue-600">全部作品 ▾</button>
           <div className="flex items-center gap-6 text-sm font-semibold text-slate-700">
             <button type="button" onClick={() => onComingSoon('已隐藏')} className="hover:text-blue-600">已隐藏</button>
-            <button type="button" onClick={() => onComingSoon('回收站')} className="hover:text-blue-600">回收站</button>
+            <button type="button" onClick={onTrash || (() => onComingSoon('回收站'))} className="hover:text-blue-600">回收站</button>
           </div>
         </div>
 
         {works.length > 0 ? (
           <div className="flex flex-wrap gap-x-10 gap-y-8">
             {works.map((work) => (
-              <WorkCard key={work.id} work={work} isAuthenticated={isAuthenticated} onOpen={onOpenWork} />
+              <WorkCard
+                key={work.id}
+                work={work}
+                isAuthenticated={isAuthenticated}
+                onOpen={onOpenWork}
+                onDelete={onDeleteWork}
+                onRename={onRenameWork}
+              />
             ))}
           </div>
         ) : (

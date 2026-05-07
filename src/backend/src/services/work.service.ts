@@ -139,6 +139,95 @@ export class WorkService {
   }
 
   /**
+   * 获取回收站作品列表
+   */
+  static async findDeletedByUser(
+    userId: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+    },
+  ) {
+    const page = options?.page || 1;
+    const pageSize = options?.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    const where = {
+      userId,
+      deletedAt: { not: null },
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.work.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { deletedAt: 'desc' },
+      }),
+      prisma.work.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  /**
+   * 恢复作品
+   */
+  static async restore(workId: string, userId: string): Promise<Work> {
+    const work = await prisma.work.findFirst({
+      where: {
+        id: workId,
+        userId,
+        deletedAt: { not: null },
+      },
+    });
+
+    if (!work) {
+      throw new Error('作品不存在或无法恢复');
+    }
+
+    return prisma.work.update({
+      where: { id: workId },
+      data: {
+        deletedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * 永久删除作品
+   */
+  static async permanentDelete(workId: string, userId: string): Promise<Work> {
+    const work = await prisma.work.findFirst({
+      where: {
+        id: workId,
+        userId,
+        deletedAt: { not: null },
+      },
+    });
+
+    if (!work) {
+      throw new Error('作品不存在或无法删除');
+    }
+
+    // 先删除所有章节
+    await prisma.chapter.deleteMany({
+      where: { workId },
+    });
+
+    // 再删除作品
+    return prisma.work.delete({
+      where: { id: workId },
+    });
+  }
+
+  /**
    * 创建章节
    */
   static async createChapter(

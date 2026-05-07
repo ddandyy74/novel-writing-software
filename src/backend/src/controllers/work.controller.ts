@@ -247,6 +247,63 @@ export async function reorderChapters(request: FastifyRequest, reply: FastifyRep
 }
 
 /**
+ * 获取回收站作品列表
+ */
+export async function getTrashWorks(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+  if (!userId) {
+    return reply.status(401).send(errorResponse(ErrorCodes.AUTH_TOKEN_INVALID, '未认证'));
+  }
+
+  const query = getWorksQuerySchema.parse(request.query);
+
+  const result = await WorkService.findDeletedByUser(userId, {
+    page: query.page,
+    pageSize: query.pageSize,
+  });
+
+  return reply.send(
+    paginatedResponse(result.items, result.page, result.pageSize, result.total)
+  );
+}
+
+/**
+ * 恢复作品
+ */
+export async function restoreWork(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+  const { id } = idParamSchema.parse(request.params);
+
+  try {
+    const work = await WorkService.restore(id, userId!);
+    return reply.send(successResponse(work, '恢复成功'));
+  } catch (error: any) {
+    if (error.message === '作品不存在或无法恢复') {
+      return reply.status(404).send(errorResponse(ErrorCodes.WORK_NOT_FOUND, error.message));
+    }
+    throw error;
+  }
+}
+
+/**
+ * 永久删除作品
+ */
+export async function permanentDeleteWork(request: FastifyRequest, reply: FastifyReply) {
+  const userId = request.user?.userId;
+  const { id } = idParamSchema.parse(request.params);
+
+  try {
+    await WorkService.permanentDelete(id, userId!);
+    return reply.send(successResponse(null, '永久删除成功'));
+  } catch (error: any) {
+    if (error.message === '作品不存在或无法删除') {
+      return reply.status(404).send(errorResponse(ErrorCodes.WORK_NOT_FOUND, error.message));
+    }
+    throw error;
+  }
+}
+
+/**
  * 作品路由
  */
 export async function workRoutes(app: FastifyInstance) {
@@ -256,6 +313,11 @@ export async function workRoutes(app: FastifyInstance) {
   app.get('/:id', { onRequest: [app.authenticate], handler: getWorkById });
   app.put('/:id', { onRequest: [app.authenticate], handler: updateWork });
   app.delete('/:id', { onRequest: [app.authenticate], handler: deleteWork });
+
+  // 回收站
+  app.get('/trash/list', { onRequest: [app.authenticate], handler: getTrashWorks });
+  app.post('/trash/:id/restore', { onRequest: [app.authenticate], handler: restoreWork });
+  app.delete('/trash/:id', { onRequest: [app.authenticate], handler: permanentDeleteWork });
 
   // 章节 CRUD
   app.post('/:workId/chapters', { onRequest: [app.authenticate], handler: createChapter });

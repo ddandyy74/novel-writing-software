@@ -40,6 +40,7 @@ class ApiClient {
     const { method = 'GET', body, headers = {}, token } = options;
 
     const authToken = token || this.getToken();
+    console.log(`[API] ${method} ${endpoint}`, { hasToken: !!authToken, tokenPreview: authToken?.substring(0, 20) });
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
@@ -63,6 +64,7 @@ class ApiClient {
       const data = await response.json();
 
       if (response.status === 401) {
+        console.log(`[API] 401 Unauthorized for ${endpoint}`, { status: response.status, data });
         this.onUnauthorized();
       }
 
@@ -156,13 +158,30 @@ class ApiClient {
     });
   }
 
+  // 回收站 API
+  async getTrashWorks(page: number = 1, pageSize: number = 20) {
+    return this.request(`/works/trash/list?page=${page}&pageSize=${pageSize}`);
+  }
+
+  async restoreWork(workId: string) {
+    return this.request(`/works/trash/${workId}/restore`, {
+      method: 'POST',
+    });
+  }
+
+  async permanentDeleteWork(workId: string) {
+    return this.request(`/works/trash/${workId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // 章节 API
   async getChapters(workId: string) {
     return this.request(`/works/${workId}/chapters`);
   }
 
-  async getChapter(workId: string, chapterId: string) {
-    return this.request(`/works/${workId}/chapters/${chapterId}`);
+  async getChapter(chapterId: string) {
+    return this.request(`/works/chapters/${chapterId}`);
   }
 
   async createChapter(workId: string, data: { title: string; content: string; order: number }) {
@@ -172,15 +191,15 @@ class ApiClient {
     });
   }
 
-  async updateChapter(workId: string, chapterId: string, data: Partial<{ title: string; content: string }>) {
-    return this.request(`/works/${workId}/chapters/${chapterId}`, {
-      method: 'PATCH',
+  async updateChapter(chapterId: string, data: Partial<{ title: string; content: string }>) {
+    return this.request(`/works/chapters/${chapterId}`, {
+      method: 'PUT',
       body: data,
     });
   }
 
-  async deleteChapter(workId: string, chapterId: string) {
-    return this.request(`/works/${workId}/chapters/${chapterId}`, {
+  async deleteChapter(chapterId: string) {
+    return this.request(`/works/chapters/${chapterId}`, {
       method: 'DELETE',
     });
   }

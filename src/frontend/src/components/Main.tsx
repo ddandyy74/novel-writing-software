@@ -3,10 +3,14 @@ import { useWorkStore } from '@stores/workStore';
 import { useAuthStore } from '@stores/authStore';
 import { useEditorStore } from '@stores/editorStore';
 import { useUpdater } from '@hooks/useUpdater';
+import { useFullscreen, useFullscreenShortcut } from '@hooks/useFullscreen';
 import Login from '@components/Login';
 import WriterHome from '@components/home/WriterHome';
 import AppTabs from '@components/shell/AppTabs';
 import WriterWorkspace from '@components/workspace/WriterWorkspace';
+import PreferencesModal from '@components/editor/PreferencesModal';
+import RenameWorkModal from '@components/editor/RenameWorkModal';
+import TrashModal from '@components/editor/TrashModal';
 import api from '../api/client';
 
 type ViewMode = 'home' | 'workspace';
@@ -21,6 +25,8 @@ const Main: React.FC = () => {
     loadWorks,
     createWork,
     selectWork,
+    updateWork,
+    deleteWork,
     createChapter,
     selectChapter,
     updateChapter,
@@ -38,6 +44,7 @@ const Main: React.FC = () => {
     cursorColumn,
   } = useEditorStore();
   const { updateAvailable, downloading, downloadedBytes, downloadAndInstall } = useUpdater();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [showNewWork, setShowNewWork] = useState(false);
@@ -48,6 +55,11 @@ const Main: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [renamingWorkId, setRenamingWorkId] = useState<string | null>(null);
+
+  useFullscreenShortcut(toggleFullscreen);
 
   useEffect(() => {
     loadWorks();
@@ -149,6 +161,28 @@ const Main: React.FC = () => {
     }
   };
 
+  const handleRenameWork = async (workId: string) => {
+    setRenamingWorkId(workId);
+  };
+
+  const confirmRenameWork = async (title: string) => {
+    if (!renamingWorkId) return;
+
+    await updateWork(renamingWorkId, { title } as any);
+    setRenamingWorkId(null);
+  };
+
+  const handleDeleteWork = async (workId: string) => {
+    const work = works.find((item) => item.id === workId);
+    const confirmed = window.confirm(`确定删除《${work?.title || '该作品'}》吗？删除后可在回收站查看。`);
+    if (!confirmed) return;
+
+    await deleteWork(workId);
+    if (currentWork?.id === workId) {
+      setViewMode('home');
+    }
+  };
+
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
   };
@@ -209,9 +243,13 @@ const Main: React.FC = () => {
             syncStatus={syncStatus}
             saved={saved}
             onOpenWork={openWork}
+            onRenameWork={handleRenameWork}
+            onDeleteWork={handleDeleteWork}
             onCreateWork={() => setShowNewWork(true)}
             onLogin={() => setShowLogin(true)}
             onComingSoon={setComingSoonFeature}
+            onPreferences={() => setShowPreferences(true)}
+            onTrash={() => setShowTrash(true)}
           />
         ) : (
           <WriterWorkspace
@@ -223,11 +261,13 @@ const Main: React.FC = () => {
             cursorLine={cursorLine}
             cursorColumn={cursorColumn}
             isAuthenticated={isAuthenticated}
+            isFullscreen={isFullscreen}
             onSelectChapter={selectChapter}
             onCreateChapter={() => setShowNewChapter(true)}
             onContentChange={handleContentChange}
             onSave={handleSave}
             onLogin={() => setShowLogin(true)}
+            onToggleFullscreen={toggleFullscreen}
             onComingSoon={setComingSoonFeature}
           />
         )}
@@ -306,6 +346,23 @@ const Main: React.FC = () => {
       )}
 
       <Login isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={handleLoginSuccess} />
+
+      <PreferencesModal isOpen={showPreferences} onClose={() => setShowPreferences(false)} />
+
+      <RenameWorkModal
+        isOpen={!!renamingWorkId}
+        initialTitle={works.find((work) => work.id === renamingWorkId)?.title || ''}
+        onClose={() => setRenamingWorkId(null)}
+        onConfirm={confirmRenameWork}
+      />
+
+      <TrashModal
+        isOpen={showTrash}
+        onClose={() => setShowTrash(false)}
+        onRestore={() => {
+          loadWorks();
+        }}
+      />
 
       {updateAvailable && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

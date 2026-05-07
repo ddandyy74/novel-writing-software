@@ -2,7 +2,70 @@ import { EditorView } from '@codemirror/view';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
-// 默认主题
+const baseHighlightStyle = HighlightStyle.define([
+  { tag: t.heading1, fontWeight: '700', fontSize: '1.875rem' },
+  { tag: t.heading2, fontWeight: '700', fontSize: '1.5rem' },
+  { tag: t.heading3, fontWeight: '600', fontSize: '1.25rem' },
+  { tag: t.strong, fontWeight: '700' },
+  { tag: t.emphasis, fontStyle: 'italic' },
+  { tag: t.strikethrough, textDecoration: 'line-through' },
+  { tag: t.link, color: 'var(--color-primary-500)', textDecoration: 'underline' },
+]);
+
+export interface DynamicThemeOptions {
+  fontFamily: string;
+  fontSize: number;
+  bgColor: string;
+  lineHeight: number;
+  showLineNumbers: boolean;
+}
+
+export function createDynamicTheme(options: DynamicThemeOptions) {
+  const { fontFamily, fontSize, bgColor, lineHeight, showLineNumbers } = options;
+
+  const isDark = bgColor === '#0f0f10';
+  const textColor = isDark ? '#e4e4e7' : '#1f2937';
+  const cursorColor = isDark ? '#6366f1' : '#3b82f6';
+  const selectionColor = isDark ? '#4338ca' : '#bfdbfe';
+  const lineNumberColor = isDark ? '#52525b' : '#9ca3af';
+
+  const theme = EditorView.theme({
+    '&': {
+      backgroundColor: bgColor,
+      color: textColor,
+      height: '100%',
+    },
+    '.cm-content': {
+      fontFamily,
+      fontSize: `${fontSize}px`,
+      lineHeight: String(lineHeight),
+      padding: '32px 0',
+    },
+    '.cm-line': {
+      padding: '0 16px',
+      textIndent: '2em',
+    },
+    '.cm-cursor': {
+      borderLeftColor: cursorColor,
+      borderLeftWidth: '2px',
+    },
+    '.cm-selectionBackground': {
+      backgroundColor: selectionColor,
+    },
+    '.cm-gutters': {
+      backgroundColor: 'transparent',
+      color: lineNumberColor,
+      border: 'none',
+      display: showLineNumbers ? 'block' : 'none',
+    },
+  }, { dark: isDark });
+
+  return [
+    theme,
+    syntaxHighlighting(baseHighlightStyle),
+  ];
+}
+
 const defaultTheme = EditorView.theme({
   '&': {
     backgroundColor: 'var(--editor-bg)',
@@ -17,7 +80,7 @@ const defaultTheme = EditorView.theme({
   },
   '.cm-line': {
     padding: '0 16px',
-    textIndent: '2em', // 首行缩进
+    textIndent: '2em',
   },
   '.cm-cursor': {
     borderLeftColor: 'var(--editor-cursor)',
@@ -31,15 +94,8 @@ const defaultTheme = EditorView.theme({
     color: 'var(--editor-line-number)',
     border: 'none',
   },
-  '.cm-activeLineGutter': {
-    color: 'var(--editor-line-number-active)',
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'var(--editor-line-highlight)',
-  },
 }, { dark: false });
 
-// 默认语法高亮
 const defaultHighlightStyle = HighlightStyle.define([
   { tag: t.heading1, fontWeight: '700', fontSize: '1.875rem' },
   { tag: t.heading2, fontWeight: '700', fontSize: '1.5rem' },
@@ -55,7 +111,6 @@ export const defaultEditorTheme = [
   syntaxHighlighting(defaultHighlightStyle),
 ];
 
-// 护眼主题
 const eyeCareTheme = EditorView.theme({
   '&': {
     backgroundColor: '#fffef5',
@@ -84,12 +139,6 @@ const eyeCareTheme = EditorView.theme({
     color: '#9ca377',
     border: 'none',
   },
-  '.cm-activeLineGutter': {
-    color: '#16a34a',
-  },
-  '.cm-activeLine': {
-    backgroundColor: '#fef3c7',
-  },
 }, { dark: false });
 
 export const eyeCareEditorTheme = [
@@ -97,7 +146,6 @@ export const eyeCareEditorTheme = [
   syntaxHighlighting(defaultHighlightStyle),
 ];
 
-// 深色主题
 const darkTheme = EditorView.theme({
   '&': {
     backgroundColor: '#0f0f10',
@@ -126,12 +174,6 @@ const darkTheme = EditorView.theme({
     color: '#52525b',
     border: 'none',
   },
-  '.cm-activeLineGutter': {
-    color: '#6366f1',
-  },
-  '.cm-activeLine': {
-    backgroundColor: '#18181b',
-  },
 }, { dark: true });
 
 export const darkEditorTheme = [
@@ -139,7 +181,6 @@ export const darkEditorTheme = [
   syntaxHighlighting(defaultHighlightStyle),
 ];
 
-// 主题映射
 export const editorThemes = {
   'default': defaultEditorTheme,
   'eye-care': eyeCareEditorTheme,

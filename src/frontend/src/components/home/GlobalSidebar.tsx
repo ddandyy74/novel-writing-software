@@ -23,6 +23,7 @@ interface GlobalSidebarProps {
   isAuthenticated: boolean;
   onLogin: () => void;
   onComingSoon: (feature: string) => void;
+  onPreferences?: () => void;
 }
 
 const navItems = [
@@ -44,6 +45,7 @@ const GlobalSidebar: React.FC<GlobalSidebarProps> = ({
   isAuthenticated,
   onLogin,
   onComingSoon,
+  onPreferences,
 }) => (
   <aside className="flex w-[180px] flex-none flex-col border-r border-slate-200 bg-[#f3f5f8]">
     <button type="button" onClick={isAuthenticated ? undefined : onLogin} className="px-4 pb-8 pt-8 text-center">
@@ -76,7 +78,7 @@ const GlobalSidebar: React.FC<GlobalSidebarProps> = ({
     </nav>
 
     <div className="flex h-12 items-center justify-around border-t border-slate-200 text-slate-500">
-      <button type="button" onClick={() => onComingSoon('偏好设置')} className="text-xs hover:text-slate-900">设置</button>
+      <button type="button" onClick={onPreferences || (() => onComingSoon('偏好设置'))} className="text-xs hover:text-slate-900">设置</button>
       <button type="button" onClick={() => onComingSoon('客服帮助')} className="text-xs hover:text-slate-900">帮助</button>
       <button type="button" onClick={() => onComingSoon('同步工具')} className="text-xs hover:text-slate-900">同步</button>
     </div>

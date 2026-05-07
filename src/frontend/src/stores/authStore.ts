@@ -34,12 +34,14 @@ export const useAuthStore = create<AuthState>()(
         const response = await api.login(email, password);
 
         if (response.code === 0 && response.data) {
+          console.log('[authStore] Login success, setting tokens');
           set({
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
             isAuthenticated: true,
           });
 
+          console.log('[authStore] Token set, getting user info');
           const userResponse = await api.getCurrentUser();
           if (userResponse.code === 0 && userResponse.data) {
             set({ user: userResponse.data as User });
