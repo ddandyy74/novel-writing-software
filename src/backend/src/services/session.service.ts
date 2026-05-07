@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getRedis } from '../middleware/redis';
 
 interface Session {

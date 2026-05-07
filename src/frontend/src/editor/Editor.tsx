@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { EditorState, Transaction } from '@codemirror/state';
+import React, { useRef, useEffect } from 'react';
+import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { useEditorStore } from '@stores/editorStore';
@@ -41,7 +41,7 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
         lineNumbers(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
-        history({ maxDepth: 50 }),
+        history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         
         themeCompartment.current.of(editorThemes[theme]),

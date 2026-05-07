@@ -38,7 +38,6 @@ const countWords = (text: string): number => {
   const cleanText = text.replace(/\s+/g, '');
   
   const chinese = (cleanText.match(/[\u4e00-\u9fa5]/g) || []).length;
-  const english = (cleanText.match(/[a-zA-Z]+/g) || []).length;
   const punctuation = (cleanText.match(/[，。！？；：""''【】《》\-\—\…\·、,.\!?;:\"\'\[\]<>]/g) || []).length;
   
   return chinese + punctuation;
@@ -62,7 +61,7 @@ export const countWordsDetailed = (text: string): WordCountResult => {
 
 export const useEditorStore = create<EditorState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       content: '',
       totalWords: 0,
       chapterWords: 0,

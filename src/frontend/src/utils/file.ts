@@ -1,5 +1,7 @@
-import { save, open } from '@tauri-apps/plugin-dialog';
-import { writeTextFile, readTextFile, join, appDataDir } from '@tauri-apps/plugin-fs';
+/**
+ * 文件操作工具（Web 版本）
+ * Tauri 版本需要安装 @tauri-apps/plugin-dialog 和 @tauri-apps/plugin-fs
+ */
 
 function isValidFilename(filename: string): boolean {
   if (!filename || filename.length === 0 || filename.length > 255) {
@@ -20,21 +22,17 @@ function isValidFilename(filename: string): boolean {
 
 export async function saveFile(content: string, defaultPath?: string): Promise<boolean> {
   try {
-    const filePath = await save({
-      defaultPath,
-      filters: [
-        {
-          name: 'Text',
-          extensions: ['txt', 'md'],
-        },
-      ],
-    });
-
-    if (filePath) {
-      await writeTextFile(filePath, content);
-      return true;
-    }
-    return false;
+    // Web 版本：使用下载
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = defaultPath || 'untitled.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
   } catch (error) {
     if (import.meta.env.DEV) {
       console.error('Save file error:', error);
@@ -45,21 +43,23 @@ export async function saveFile(content: string, defaultPath?: string): Promise<b
 
 export async function openFile(): Promise<string | null> {
   try {
-    const filePath = await open({
-      multiple: false,
-      filters: [
-        {
-          name: 'Text',
-          extensions: ['txt', 'md'],
-        },
-      ],
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.txt,.md';
+      
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const content = await file.text();
+          resolve(content);
+        } else {
+          resolve(null);
+        }
+      };
+      
+      input.click();
     });
-
-    if (filePath && typeof filePath === 'string') {
-      const content = await readTextFile(filePath);
-      return content;
-    }
-    return null;
   } catch (error) {
     if (import.meta.env.DEV) {
       console.error('Open file error:', error);
@@ -74,9 +74,8 @@ export async function autoSaveToLocal(content: string, filename: string): Promis
       throw new Error('Invalid filename');
     }
     
-    const appDataDirPath = await appDataDir();
-    const filePath = await join(appDataDirPath, filename);
-    await writeTextFile(filePath, content);
+    // Web 版本：存储到 localStorage
+    localStorage.setItem(`autosave-${filename}`, content);
     return true;
   } catch (error) {
     if (import.meta.env.DEV) {

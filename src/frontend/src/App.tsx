@@ -1,32 +1,38 @@
-import React from 'react';
-import { useEditorStore } from '@stores/editorStore';
-import { useThemeStore } from '@stores/themeStore';
-import Editor from '@editor/Editor';
+import React, { useEffect, useState } from 'react';
+import { useAuthStore } from '@stores/authStore';
+import { setApiConfig } from './config/api';
+import { cliConfig, printBanner } from './config/cli';
+import Main from '@components/Main';
 
 const App: React.FC = () => {
-  const { content, updateContent } = useEditorStore();
-  const { theme } = useThemeStore();
+  const { isAuthenticated, accessToken } = useAuthStore();
+  const [checking, setChecking] = useState(true);
 
-  return (
-    <div className="h-screen w-screen overflow-hidden" data-theme={theme}>
-      <div className="h-full flex flex-col">
-        {/* 工具栏 */}
-        <div className="h-12 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-light)] flex items-center px-4">
-          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
-            网文作者码字软件
-          </h1>
-        </div>
+  useEffect(() => {
+    setApiConfig({ baseUrl: cliConfig.apiUrl });
+    
+    if (cliConfig.debug) {
+      printBanner();
+    }
 
-        {/* 主编辑器 */}
-        <div className="flex-1 overflow-hidden">
-          <Editor
-            content={content}
-            onChange={updateContent}
-          />
-        </div>
+    setTimeout(() => setChecking(false), 100);
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && accessToken) {
+      console.log('已登录，API 地址:', cliConfig.apiUrl);
+    }
+  }, [isAuthenticated, accessToken]);
+
+  if (checking) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[var(--color-bg-primary)]">
+        <div className="text-[var(--color-text-secondary)]">加载中...</div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <Main />;
 };
 
 export default App;
