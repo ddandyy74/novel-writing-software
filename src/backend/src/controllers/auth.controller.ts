@@ -12,7 +12,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
   try {
     const data = registerSchema.parse(request.body);
 
-    const result = await AuthService.register(data);
+    const result = await AuthService.register(data, request.server);
 
     return reply.status(201).send(
       successResponse({
@@ -90,9 +90,10 @@ export async function refreshToken(request: FastifyRequest, reply: FastifyReply)
  */
 export async function logout(request: FastifyRequest, reply: FastifyReply) {
   const userId = request.user?.userId;
+  const body = request.body as { refreshToken?: string } | undefined;
 
   if (userId) {
-    await AuthService.logout(userId);
+    await AuthService.logout(userId, body?.refreshToken);
   }
 
   return reply.send(successResponse(null, '登出成功'));
