@@ -5,10 +5,9 @@
 import { CoverGenerator, type CoverGeneratorConfig } from './generator';
 import type { CoverGenerateRequest, CoverGenerateResult, CoverImage, CoverStyle } from '../types';
 
-// 导出类型和类
-export * from './types';
-export { CoverGenerator, buildCoverPrompt, buildNegativePrompt } from './generator';
+export { CoverGenerator } from './generator';
 export * from './prompts';
+export type { CoverGenerateRequest, CoverGenerateResult, CoverImage, CoverStyle };
 
 /**
  * 创建封面生成器实例

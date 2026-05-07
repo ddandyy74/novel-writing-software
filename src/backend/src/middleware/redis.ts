@@ -16,7 +16,6 @@ export async function initRedis(): Promise<Redis> {
       port: config.redis.port,
       password: config.redis.password,
       maxRetriesPerRequest: 3,
-      retryDelayOnFailover: 100,
       lazyConnect: true,
     });
 
@@ -61,7 +60,8 @@ export function rateLimitMiddleware(limit: number, windowSeconds: number) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const redis = getRedis();
-      const userId = request.user?.userId || request.ip;
+      const userPayload = (request as any).user;
+      const userId = userPayload?.userId || request.ip;
       const key = `rate-limit:${userId}`;
 
       const current = await redis.incr(key);
@@ -79,14 +79,11 @@ export function rateLimitMiddleware(limit: number, windowSeconds: number) {
 
       if (current > limit) {
         return reply.status(429).send(
-          errorResponse(ErrorCodes.SYSTEM_RATE_LIMIT_EXCEEDED, ErrorMessages[ErrorCodes.SYSTEM_RATE_LIMIT_EXCEEDED], {
-            retryAfter: ttl,
-          })
+          errorResponse(ErrorCodes.SYSTEM_RATE_LIMIT_EXCEEDED, ErrorMessages[ErrorCodes.SYSTEM_RATE_LIMIT_EXCEEDED])
         );
       }
     } catch (error) {
-      // Redis 错误不应该阻止请求
-      request.log.error('Rate limit error:', error);
+      request.log.error(error, 'Rate limit error');
     }
   };
 }

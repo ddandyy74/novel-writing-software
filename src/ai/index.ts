@@ -3,19 +3,31 @@
  */
 
 // 错别字检测
-export * from './spell-check';
 export { createSpellChecker, checkSpelling, batchCheckSpelling } from './spell-check';
 
 // 大纲生成
-export * from './outline-gen';
 export { createOutlineGenerator, generateOutline, outlineToMarkdown, outlinesToMarkdown } from './outline-gen';
 
 // 封面生成
-export * from './cover-gen';
 export { createCoverGenerator, generateCover, COVER_STYLES } from './cover-gen';
 
 // 类型导出
-export * from './types';
+export type {
+  SpellCheckError,
+  SpellCheckResult,
+  SpellCheckRequest,
+  OutlineChapter,
+  OutlineGenerateResult,
+  OutlineGenerateRequest,
+  CoverStyle,
+  CoverGenerateRequest,
+  CoverGenerateResult,
+  CoverImage,
+  AIErrorResponse,
+  AIServiceConfig,
+  AIUsageStats,
+  AICostEstimate,
+} from './types';
 
 /**
  * 创建 AI 服务配置

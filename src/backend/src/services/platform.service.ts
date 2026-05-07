@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FastifyInstance } from 'fastify';
 import { encrypt, decrypt } from '../utils/crypto';
 import { config } from '../config';

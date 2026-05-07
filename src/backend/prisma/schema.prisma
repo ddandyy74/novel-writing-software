@@ -2,7 +2,8 @@
 // 数据库设计文档：docs/architecture/database-design.md
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
@@ -29,8 +30,6 @@ model User {
 
   // 关联
   works             Work[]
-  characters        Character[]
-  outlines          Outline[]
   writingGoals      WritingGoal[]
   writingRecords    WritingRecord[]
   platformAccounts  PlatformAccount[]
@@ -245,7 +244,7 @@ model PlatformAccount {
 // ============================================
 
 model SyncLog {
-  id             String   @id @default() @db.Uuid
+  id             String   @id @default(uuid())
   userId         String   @map("user_id")
   clientId       String   @map("client_id")
   syncType       String   @map("sync_type") // push, pull

@@ -1,6 +1,3 @@
-import { FastifyRequest } from 'fastify';
-
-// 用户信息（从 JWT Token 解析）
 export interface UserPayload {
   userId: string;
   email: string;
@@ -9,14 +6,14 @@ export interface UserPayload {
   exp: number;
 }
 
-// 扩展 FastifyRequest
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: UserPayload;
-  }
+export function getUserId(request: any): string | undefined {
+  return request.user?.userId;
 }
 
-// 统一响应格式
+export function getUser(request: any): UserPayload | undefined {
+  return request.user;
+}
+
 export interface ApiResponse<T = any> {
   code: number;
   message: string;
@@ -24,7 +21,6 @@ export interface ApiResponse<T = any> {
   timestamp: number;
 }
 
-// 分页响应
 export interface PaginatedResponse<T> {
   items: T[];
   pagination: {
@@ -35,23 +31,20 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// 错误详情
 export interface ErrorDetail {
   field?: string;
   reason?: string;
 }
 
-// 同步变更
 export interface SyncChange {
-  type: string; // work, chapter, character
-  action: string; // create, update, delete
+  type: string;
+  action: string;
   id: string;
   data?: any;
   timestamp: string;
   version: number;
 }
 
-// 冲突信息
 export interface SyncConflict {
   type: string;
   id: string;

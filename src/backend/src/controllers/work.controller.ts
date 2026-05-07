@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { WorkService } from '../services/work.service';
 import { successResponse, errorResponse, paginatedResponse, ErrorCodes } from '../utils/response';

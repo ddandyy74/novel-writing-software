@@ -100,7 +100,7 @@ export class WorkService {
   static async update(
     workId: string,
     userId: string,
-    data: Partial<Work>,
+    data: Partial<Omit<Work, 'id' | 'userId' | 'createdAt'>>,
   ): Promise<Work> {
     const work = await this.findById(workId, userId);
 
@@ -108,10 +108,12 @@ export class WorkService {
       throw new Error('作品不存在');
     }
 
+    const { id, userId: _, createdAt, ...updateData } = data as any;
+    
     return prisma.work.update({
       where: { id: workId },
       data: {
-        ...data,
+        ...updateData,
         updatedAt: new Date(),
       },
     });

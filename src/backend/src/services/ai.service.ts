@@ -6,10 +6,10 @@ import {
   type SpellCheckResult,
   type OutlineGenerateResult,
   type CoverGenerateResult,
-} from '../../../ai';
-import type { SpellCheckRequest } from '../../../ai/spell-check/types';
-import type { OutlineGenerateRequest } from '../../../ai/types';
-import type { CoverGenerateRequest } from '../../../ai/cover-gen/types';
+  type SpellCheckRequest,
+  type OutlineGenerateRequest,
+  type CoverGenerateRequest,
+} from '../ai';
 
 const QUOTA_LIMITS: Record<string, Record<string, number>> = {
   free: {
@@ -201,7 +201,7 @@ export class AIService {
     tokens?: number;
     cost: number;
   }): Promise<void> {
-    this.app.log.info('AI Usage:', params);
+    this.app.log.info(params, 'AI Usage');
     
     if (this.prisma) {
       try {
@@ -215,7 +215,7 @@ export class AIService {
           },
         });
       } catch (error) {
-        this.app.log.error('Failed to log AI usage:', error);
+        this.app.log.error(error, 'Failed to log AI usage');
       }
     }
   }
@@ -238,7 +238,7 @@ export class AIService {
         });
         userPlan = user?.plan || 'free';
       } catch (error) {
-        this.app.log.error('Failed to get user plan:', error);
+        this.app.log.error(error, 'Failed to get user plan');
       }
     }
 
@@ -255,7 +255,7 @@ export class AIService {
     }
 
     if (current > limit) {
-      this.app.log.warn('Quota exceeded', { userId, service, current, limit });
+      this.app.log.warn({ userId, service, current, limit }, 'Quota exceeded');
       return false;
     }
 

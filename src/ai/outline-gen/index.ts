@@ -5,10 +5,9 @@
 import { OutlineGenerator, type OutlineGeneratorConfig } from './generator';
 import type { OutlineGenerateRequest, OutlineGenerateResult, OutlineChapter } from '../types';
 
-// 导出类型和类
-export * from './types';
-export { OutlineGenerator, buildOutlinePrompt } from './generator';
+export { OutlineGenerator } from './generator';
 export * from './prompts';
+export type { OutlineGenerateRequest, OutlineGenerateResult, OutlineChapter };
 
 /**
  * 创建大纲生成器实例

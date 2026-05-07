@@ -6,8 +6,8 @@ services:
   # ============================================
   backend:
     build:
-      context: ./src/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: src/backend/Dockerfile
     container_name: novel-writer-backend
     restart: unless-stopped
     ports:
@@ -15,9 +15,10 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/novel_writer
-      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
-      - SENTRY_DSN=${SENTRY_DSN_BACKEND}
+      - AES_ENCRYPTION_KEY=${AES_ENCRYPTION_KEY}
     volumes:
       - ./logs/backend:/var/log/backend
     depends_on:
