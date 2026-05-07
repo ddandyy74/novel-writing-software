@@ -5,7 +5,60 @@ import { config } from '../config';
 import { generateToken } from '../utils/crypto';
 import { getRedis } from '../middleware/redis';
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 30 * 60;
+
 export class AuthService {
+  private static async checkAccountLock(email: string): Promise<void> {
+    try {
+      const redis = getRedis();
+      const lockKey = `account-lock:${email}`;
+      const attemptsKey = `login-attempts:${email}`;
+      
+      const lockUntil = await redis.get(lockKey);
+      if (lockUntil) {
+        const remainingTime = Math.ceil((parseInt(lockUntil) - Date.now()) / 1000);
+        throw new Error(`账户已被锁定，请在 ${remainingTime} 秒后重试`);
+      }
+      
+      const attempts = await redis.get(attemptsKey);
+      if (attempts && parseInt(attempts) >= MAX_LOGIN_ATTEMPTS) {
+        const lockUntil = Date.now() + LOCKOUT_DURATION * 1000;
+        await redis.set(lockKey, lockUntil.toString(), 'EX', LOCKOUT_DURATION);
+        await redis.del(attemptsKey);
+        throw new Error(`登录失败次数过多，账户已被锁定 30 分钟`);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('账户')) {
+        throw error;
+      }
+    }
+  }
+
+  private static async recordLoginFailure(email: string): Promise<void> {
+    try {
+      const redis = getRedis();
+      const attemptsKey = `login-attempts:${email}`;
+      
+      const attempts = await redis.incr(attemptsKey);
+      if (attempts === 1) {
+        await redis.expire(attemptsKey, 3600);
+      }
+    } catch (error) {
+      console.error('Failed to record login failure:', error);
+    }
+  }
+
+  private static async clearLoginFailures(email: string): Promise<void> {
+    try {
+      const redis = getRedis();
+      const attemptsKey = `login-attempts:${email}`;
+      await redis.del(attemptsKey);
+    } catch (error) {
+      console.error('Failed to clear login failures:', error);
+    }
+  }
+
   static async register(data: {
     email: string;
     password: string;
@@ -25,12 +78,17 @@ export class AuthService {
     password: string,
     app: FastifyInstance,
   ): Promise<{ user: User; accessToken: string; refreshToken: string; expiresIn: number }> {
+    await this.checkAccountLock(email);
+    
     const user = await UserService.findByEmail(email);
     const isValid = user && await UserService.validatePassword(user, password);
 
     if (!user || !isValid) {
+      await this.recordLoginFailure(email);
       throw new Error('邮箱或密码错误');
     }
+
+    await this.clearLoginFailures(email);
 
     const tokens = await this.generateTokens(user, app);
 

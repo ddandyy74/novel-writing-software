@@ -53,11 +53,18 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
       })
     );
   } catch (error: any) {
-    if (error.message === '用户不存在' || error.message === '密码错误') {
+    if (error.message === '邮箱或密码错误') {
       return reply.status(401).send(
-        errorResponse(ErrorCodes.AUTH_INVALID_CREDENTIALS, '邮箱或密码错误')
+        errorResponse(ErrorCodes.AUTH_INVALID_CREDENTIALS, error.message)
       );
     }
+    
+    if (error.message.includes('账户已被锁定') || error.message.includes('登录失败次数过多')) {
+      return reply.status(429).send(
+        errorResponse(ErrorCodes.SYSTEM_RATE_LIMIT_EXCEEDED, error.message)
+      );
+    }
+    
     throw error;
   }
 }

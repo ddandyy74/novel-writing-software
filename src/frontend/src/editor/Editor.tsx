@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { EditorState, Transaction } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -17,35 +17,41 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
+  const onSaveRef = useRef(onSave);
   
   const { theme } = useThemeStore();
   const { updateCursorPosition } = useEditorStore();
 
-  // 初始化编辑器
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  const debouncedOnChange = useRef(
+    debounce((newContent: string) => {
+      onChange(newContent);
+    }, 300)
+  ).current;
+
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // 创建编辑器状态
     const startState = EditorState.create({
       doc: content,
       extensions: [
         lineNumbers(),
         highlightActiveLine(),
         highlightActiveLineGutter(),
-        history({ maxDepth: 50 }), // 支持撤销 50 步
+        history({ maxDepth: 50 }),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         
-        // 主题
         themeCompartment.current.of(editorThemes[theme]),
         
-        // 监听内容变化
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newContent = update.state.doc.toString();
-            onChange(newContent);
+            debouncedOnChange(newContent);
           }
           
-          // 更新光标位置
           if (update.selectionSet) {
             const pos = update.state.selection.main.head;
             const line = update.state.doc.lineAt(pos);
@@ -53,7 +59,6 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
           }
         }),
         
-        // 编辑器样式
         EditorView.theme({
           '&': {
             height: '100%',
@@ -65,7 +70,6 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
       ],
     });
 
-    // 创建编辑器视图
     const view = new EditorView({
       state: startState,
       parent: editorRef.current,
@@ -73,13 +77,11 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
 
     viewRef.current = view;
 
-    // 清理
     return () => {
       view.destroy();
     };
   }, []);
 
-  // 切换主题
   useEffect(() => {
     if (viewRef.current) {
       viewRef.current.dispatch({
@@ -88,7 +90,6 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
     }
   }, [theme]);
 
-  // 外部内容更新
   useEffect(() => {
     if (viewRef.current) {
       const currentValue = viewRef.current.state.doc.toString();
@@ -104,18 +105,17 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
     }
   }, [content]);
 
-  // 保存快捷键 (Cmd/Ctrl + S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        onSave?.();
+        onSaveRef.current?.();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onSave]);
+  }, []);
 
   return (
     <div 
@@ -124,5 +124,24 @@ const Editor: React.FC<EditorProps> = ({ content, onChange, onSave }) => {
     />
   );
 };
+
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+    
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(later, wait);
+  };
+}
 
 export default Editor;
