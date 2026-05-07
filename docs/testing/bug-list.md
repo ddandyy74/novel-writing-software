@@ -772,13 +772,13 @@ export class PlatformService {
 | 周二 | CR-AI-004 | 缺少成本控制机制 | @ai-engineer | 5h | ✅ 已完成 |
 | 周二 | CR-AI-005 | 缺少速率限制 | @ai-engineer | 2h | ✅ 已完成 |
 | 周三 | CR-SEC-003 | 敏感数据未加密存储 | @security-engineer | 3h | ✅ 已完成 |
-| 周三 | HI-SEC-001 | 缺少账户锁定机制 | @security-engineer | 3h | ⏳ 未开始 |
-| 周四 | HI-FE-001 | 内存泄漏隐患 | @frontend-developer | 1h | ⏳ 未开始 |
-| 周四 | HI-FE-002 | 缺少防抖/节流 | @frontend-developer | 1h | ⏳ 未开始 |
+| 周三 | HI-SEC-001 | 缺少账户锁定机制 | @security-engineer | 3h | ✅ 已完成 |
+| 周四 | HI-FE-001 | 内存泄漏隐患 | @frontend-developer | 1h | ✅ 已完成 |
+| 周四 | HI-FE-002 | 缺少防抖/节流 | @frontend-developer | 1h | ✅ 已完成 |
 | 周五 | HI-SEC-002 | 会话管理缺失 | @security-engineer | 4h | ⏳ 未开始 |
 | 周五 | HI-SEC-003 | 敏感操作缺少二次认证 | @security-engineer | 3h | ⏳ 未开始 |
 
-**Week 2 总工时**: 28 小时（已完成 16h）
+**Week 2 总工时**: 28 小时（已完成 18h）
 
 ---
 
