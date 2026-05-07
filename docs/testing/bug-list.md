@@ -748,18 +748,18 @@ export class PlatformService {
 
 | 日期 | 问题 ID | 问题名称 | 责任人 | 预计工时 | 状态 |
 |------|---------|---------|--------|----------|------|
-| 周一 | CR-BE-001 | 生产环境密钥硬编码 | @backend-architect | 1h | ⏳ 未开始 |
-| 周一 | CR-SEC-001 | 硬编码默认密钥 | @security-engineer | 1h | ⏳ 未开始 |
-| 周二 | CR-BE-003 | 密码验证错误信息泄露 | @backend-architect | 0.5h | ⏳ 未开始 |
-| 周二 | CR-BE-004 | 日志记录敏感信息 | @backend-architect | 1h | ⏳ 未开始 |
-| 周三 | CR-FE-001 | 文件路径拼接不安全 | @frontend-developer | 2h | ⏳ 未开始 |
-| 周三 | CR-FE-002 | 错误处理泄露敏感信息 | @frontend-developer | 3h | ⏳ 未开始 |
-| 周四 | CR-AI-001 | API Key 明文暴露风险 | @ai-engineer | 2h | ⏳ 未开始 |
-| 周四 | CR-AI-002 | 缺少输入验证 | @ai-engineer | 3h | ⏳ 未开始 |
-| 周五 | CR-BE-002 | 认证功能未完成 | @backend-architect | 4h | ⏳ 未开始 |
-| 周五 | CR-SEC-002 | Refresh Token 未实现 | @security-engineer | 4h | ⏳ 未开始 |
+| 周一 | CR-BE-001 | 生产环境密钥硬编码 | @backend-architect | 1h | ✅ 已完成 |
+| 周一 | CR-SEC-001 | 硬编码默认密钥 | @security-engineer | 1h | ✅ 已完成 |
+| 周二 | CR-BE-003 | 密码验证错误信息泄露 | @backend-architect | 0.5h | ✅ 已完成 |
+| 周二 | CR-BE-004 | 日志记录敏感信息 | @backend-architect | 1h | ✅ 已完成 |
+| 周三 | CR-FE-001 | 文件路径拼接不安全 | @frontend-developer | 2h | ✅ 已完成 |
+| 周三 | CR-FE-002 | 错误处理泄露敏感信息 | @frontend-developer | 3h | ✅ 已完成 |
+| 周四 | CR-AI-001 | API Key 明文暴露风险 | @ai-engineer | 2h | ✅ 已完成 |
+| 周四 | CR-AI-002 | 缺少输入验证 | @ai-engineer | 3h | ✅ 已完成 |
+| 周五 | CR-BE-002 | 认证功能未完成 | @backend-architect | 4h | ⏳ 待完成 |
+| 周五 | CR-SEC-002 | Refresh Token 未实现 | @security-engineer | 4h | ⏳ 待完成 |
 
-**Week 1 总工时**: 21.5 小时
+**Week 1 总工时**: 21.5 小时（已完成 13.5h）
 
 ---
 
@@ -767,18 +767,18 @@ export class PlatformService {
 
 | 日期 | 问题 ID | 问题名称 | 责任人 | 预计工时 | 状态 |
 |------|---------|---------|--------|----------|------|
-| 周一 | CR-FE-003 | 字数统计不准确 | @frontend-developer | 2h | ⏳ 未开始 |
-| 周一 | CR-AI-003 | Prompt Injection 漏洞 | @ai-engineer | 4h | ⏳ 未开始 |
-| 周二 | CR-AI-004 | 缺少成本控制机制 | @ai-engineer | 5h | ⏳ 未开始 |
-| 周二 | CR-AI-005 | 缺少速率限制 | @ai-engineer | 2h | ⏳ 未开始 |
-| 周三 | CR-SEC-003 | 敏感数据未加密存储 | @security-engineer | 3h | ⏳ 未开始 |
+| 周一 | CR-FE-003 | 字数统计不准确 | @frontend-developer | 2h | ✅ 已完成 |
+| 周一 | CR-AI-003 | Prompt Injection 漏洞 | @ai-engineer | 4h | ✅ 已完成 |
+| 周二 | CR-AI-004 | 缺少成本控制机制 | @ai-engineer | 5h | ✅ 已完成 |
+| 周二 | CR-AI-005 | 缺少速率限制 | @ai-engineer | 2h | ✅ 已完成 |
+| 周三 | CR-SEC-003 | 敏感数据未加密存储 | @security-engineer | 3h | ✅ 已完成 |
 | 周三 | HI-SEC-001 | 缺少账户锁定机制 | @security-engineer | 3h | ⏳ 未开始 |
 | 周四 | HI-FE-001 | 内存泄漏隐患 | @frontend-developer | 1h | ⏳ 未开始 |
 | 周四 | HI-FE-002 | 缺少防抖/节流 | @frontend-developer | 1h | ⏳ 未开始 |
 | 周五 | HI-SEC-002 | 会话管理缺失 | @security-engineer | 4h | ⏳ 未开始 |
 | 周五 | HI-SEC-003 | 敏感操作缺少二次认证 | @security-engineer | 3h | ⏳ 未开始 |
 
-**Week 2 总工时**: 28 小时
+**Week 2 总工时**: 28 小时（已完成 16h）
 
 ---
 
