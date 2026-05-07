@@ -1,14 +1,7 @@
-/**
- * 大纲生成器
- * 使用 GPT-4/Claude API 生成章节大纲
- */
-
+import crypto from 'crypto';
 import type { OutlineChapter, OutlineGenerateResult, OutlineGenerateRequest } from '../types';
 import { buildOutlinePrompt, buildOutlineUpdatePrompt, buildBatchOutlinePrompt } from './prompts';
 
-/**
- * 大纲生成器配置
- */
 export interface OutlineGeneratorConfig {
   provider: 'openai' | 'anthropic';
   apiKey: string;
@@ -21,9 +14,6 @@ export interface OutlineGeneratorConfig {
   };
 }
 
-/**
- * 大纲生成器类
- */
 export class OutlineGenerator {
   private config: OutlineGeneratorConfig;
 
@@ -31,13 +21,9 @@ export class OutlineGenerator {
     this.config = config;
   }
 
-  /**
-   * 生成章节大纲
-   */
   async generate(request: OutlineGenerateRequest): Promise<OutlineGenerateResult> {
     const startTime = Date.now();
 
-    // 检查缓存
     if (this.config.cache) {
       const cacheKey = this.getCacheKey(request);
       const cached = await this.config.cache.get(cacheKey);
@@ -68,7 +54,6 @@ export class OutlineGenerator {
       processingTime,
     };
 
-    // 缓存结果（1小时）
     if (this.config.cache) {
       const cacheKey = this.getCacheKey(request);
       await this.config.cache.set(cacheKey, JSON.stringify(result), 3600);
@@ -217,30 +202,25 @@ export class OutlineGenerator {
     return result as OutlineChapter;
   }
 
-  /**
-   * 生成缓存键
-   */
   private getCacheKey(request: OutlineGenerateRequest): string {
-    const content = `${request.workId}:${request.chapterId}:${request.chapterContent.slice(0, 100)}`;
-    return `outline:${this.hashString(content)}`;
+    const keyData = {
+      workId: request.workId,
+      chapterId: request.chapterId,
+      contentHash: this.hashContent(request.chapterContent),
+      title: request.chapterTitle,
+      previousCount: request.previousOutlines?.length || 0,
+    };
+    
+    const keyString = JSON.stringify(keyData);
+    const hash = crypto.createHash('sha256').update(keyString).digest('hex').slice(0, 32);
+    
+    return `outline:${request.workId}:${request.chapterId}:${hash}`;
   }
 
-  /**
-   * 简单哈希函数
-   */
-  private hashString(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-    return hash.toString(16);
+  private hashContent(content: string): string {
+    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
   }
 
-  /**
-   * 睡眠函数
-   */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

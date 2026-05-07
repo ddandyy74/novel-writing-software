@@ -236,15 +236,17 @@ export class WorkService {
       data: updateData,
     });
 
-    // 更新作品统计
-    await this.updateWorkStats(chapter.workId);
+    if (data.content) {
+      const oldWordCount = chapter.wordCount || 0;
+      const newWordCount = updated.wordCount || 0;
+      const diff = newWordCount - oldWordCount;
+      
+      await this.incrementalUpdateWordCount(chapter.workId, diff);
+    }
 
     return updated;
   }
 
-  /**
-   * 软删除章节
-   */
   static async deleteChapter(chapterId: string, userId: string): Promise<Chapter> {
     const chapter = await this.getChapterById(chapterId);
 
@@ -252,7 +254,6 @@ export class WorkService {
       throw new Error('章节不存在');
     }
 
-    // 验证权限
     const work = await this.findById(chapter.workId, userId);
     if (!work) {
       throw new Error('权限不足');
@@ -266,15 +267,32 @@ export class WorkService {
       },
     });
 
-    // 更新作品统计
-    await this.updateWorkStats(chapter.workId);
+    const wordCount = chapter.wordCount || 0;
+    await this.incrementalUpdateWordCount(chapter.workId, -wordCount);
+    await this.decrementChapterCount(chapter.workId);
 
     return deleted;
   }
 
-  /**
-   * 更新作品统计信息
-   */
+  private static async incrementalUpdateWordCount(workId: string, diff: number): Promise<void> {
+    await prisma.work.update({
+      where: { id: workId },
+      data: {
+        wordCount: { increment: diff },
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  private static async decrementChapterCount(workId: string): Promise<void> {
+    await prisma.work.update({
+      where: { id: workId },
+      data: {
+        chapterCount: { decrement: 1 },
+      },
+    });
+  }
+
   private static async updateWorkStats(workId: string): Promise<void> {
     const stats = await prisma.chapter.aggregate({
       where: {
@@ -295,9 +313,6 @@ export class WorkService {
     });
   }
 
-  /**
-   * 章节排序
-   */
   static async reorderChapters(
     workId: string,
     userId: string,
@@ -309,14 +324,13 @@ export class WorkService {
       throw new Error('作品不存在');
     }
 
-    // 批量更新
-    await Promise.all(
+    await prisma.$transaction(
       orders.map(({ chapterId, order }) =>
         prisma.chapter.update({
           where: { id: chapterId },
           data: { order, updatedAt: new Date() },
-        }),
-      ),
+        })
+      )
     );
   }
 }
