@@ -1,9 +1,9 @@
 [package]
 name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
+version = "1.0.0"
+description = "网文作者码字软件"
+authors = ["Novel Writer Team"]
+license = "MIT"
 repository = ""
 edition = "2021"
 rust-version = "1.77.2"
@@ -23,3 +23,10 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.11.1", features = [] }
 tauri-plugin-log = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-http = "2"
+clap = { version = "4.5", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+sysinfo = "0.30"
+reqwest = { version = "0.12", features = ["blocking", "json"] }

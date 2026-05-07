@@ -9,7 +9,7 @@ interface ApiConfig {
 }
 
 const DEFAULT_CONFIG: ApiConfig = {
-  baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+  baseUrl: import.meta.env.VITE_API_URL || 'http://10.77.77.1:3000/api/v1',
   timeout: 30000,
 };
 

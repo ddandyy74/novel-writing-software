@@ -389,7 +389,7 @@ export const useWorkStore = create<WorkState>((set, get) => ({
         });
 
         if (createWorkResponse.code !== 0 || !createWorkResponse.data) {
-          throw new Error(`创建作品失败: ${localWork.title}`);
+          throw new Error(`创建作品失败: ${localWork.title} - ${createWorkResponse.message || '未知错误'}`);
         }
 
         const cloudWork = createWorkResponse.data as Work;

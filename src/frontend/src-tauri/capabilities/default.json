@@ -6,6 +6,32 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "core:webview:default",
+    "core:window:default",
+    "core:app:default",
+    "core:event:default",
+    "core:image:default",
+    "core:menu:default",
+    "core:path:default",
+    "core:resources:default",
+    "core:tray:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "http://10.77.77.1:3000/**"
+        },
+        {
+          "url": "http://localhost:3000/**"
+        },
+        {
+          "url": "https://github.com/**"
+        },
+        {
+          "url": "https://api.github.com/**"
+        }
+      ]
+    }
   ]
 }

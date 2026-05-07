@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://10.77.77.1:3000 http://localhost:3000"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://10.77.77.1:3000 http://localhost:3000 https://github.com https://api.github.com https://github-releases.githubusercontent.com"
     }
   },
   "bundle": {
@@ -39,7 +39,21 @@
     "windows": {
       "wix": {
         "language": "zh-CN"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["SimpChinese"],
+        "displayLanguageSelector": false
       }
+    },
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": [
+        "https://github.com/ddandyy74/novel-writing-software/releases/latest/download/{{arch}}-{{os}}-{{target}}.{{ext}}"
+      ]
     }
   }
 }

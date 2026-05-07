@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useWorkStore } from '@stores/workStore';
 import { useAuthStore } from '@stores/authStore';
 import { useEditorStore } from '@stores/editorStore';
-import { useLocalWorkStore } from '@stores/localWorkStore';
-import Editor from '@editor/Editor';
+import { useUpdater } from '@hooks/useUpdater';
 import Login from '@components/Login';
-import FeatureGate from '@components/FeatureGate';
+import WriterHome from '@components/home/WriterHome';
+import AppTabs from '@components/shell/AppTabs';
+import WriterWorkspace from '@components/workspace/WriterWorkspace';
 import api from '../api/client';
+
+type ViewMode = 'home' | 'workspace';
 
 const Main: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
@@ -20,20 +23,31 @@ const Main: React.FC = () => {
     selectWork,
     createChapter,
     selectChapter,
-    saveCurrentChapter,
+    updateChapter,
     syncStatus,
     syncError,
     syncLocalToCloud,
   } = useWorkStore();
-  const { updateContent, content, markAsSaved, saved } = useEditorStore();
-  const { getStorageSize } = useLocalWorkStore();
+  const {
+    updateContent,
+    content,
+    markAsSaved,
+    saved,
+    chapterWords,
+    cursorLine,
+    cursorColumn,
+  } = useEditorStore();
+  const { updateAvailable, downloading, downloadedBytes, downloadAndInstall } = useUpdater();
 
+  const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [showNewWork, setShowNewWork] = useState(false);
   const [newWorkTitle, setNewWorkTitle] = useState('');
   const [showNewChapter, setShowNewChapter] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const [showLogin, setShowLogin] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
 
   useEffect(() => {
     loadWorks();
@@ -41,40 +55,97 @@ const Main: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (currentChapter) {
-      updateContent(currentChapter.content);
-    }
+    if (isAuthenticated || bootstrapped || works.length > 0) return;
+
+    const bootstrapLocalDraft = async () => {
+      const work = await createWork({ title: '未命名作品' });
+      if (!work) return;
+
+      const chapter = await createChapter(work.id, {
+        title: '第一章',
+        content: '',
+      });
+
+      await selectWork(work.id);
+      if (chapter) {
+        await selectChapter(chapter.id);
+      }
+      setBootstrapped(true);
+    };
+
+    bootstrapLocalDraft();
+  }, [isAuthenticated, bootstrapped, works.length]);
+
+  useEffect(() => {
+    if (!currentChapter) return;
+    updateContent(currentChapter.content);
+    markAsSaved();
   }, [currentChapter]);
+
+  useEffect(() => {
+    if (!currentChapter || saved) return;
+
+    const timeoutId = window.setTimeout(() => {
+      handleSave();
+    }, 800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [content, currentChapter?.id, saved]);
 
   const checkApi = async () => {
     try {
       const response = await api.healthCheck();
-      setApiStatus(response.code === 0 ? 'ok' : 'error');
+      const data = response as any;
+      setApiStatus(data.status === 'ok' || data.code === 0 ? 'ok' : 'error');
     } catch {
       setApiStatus('error');
     }
   };
 
+  const openWork = async (workId: string) => {
+    await selectWork(workId);
+    const state = useWorkStore.getState();
+    const firstChapter = state.currentChapter || state.chapters[0];
+    if (firstChapter) {
+      await selectChapter(firstChapter.id);
+    }
+    setViewMode('workspace');
+  };
+
   const handleCreateWork = async () => {
     if (!newWorkTitle.trim()) return;
-    const work = await createWork({ title: newWorkTitle });
-    if (work) {
-      setNewWorkTitle('');
-      setShowNewWork(false);
-      selectWork(work.id);
+
+    const work = await createWork({ title: newWorkTitle.trim() });
+    if (!work) return;
+
+    const chapter = await createChapter(work.id, {
+      title: '第一章',
+      content: '',
+    });
+
+    setNewWorkTitle('');
+    setShowNewWork(false);
+    await selectWork(work.id);
+    if (chapter) {
+      await selectChapter(chapter.id);
     }
+    setViewMode('workspace');
   };
 
   const handleCreateChapter = async () => {
-    if (!currentWork || !newChapterTitle.trim()) return;
+    if (!currentWork) return;
+
+    const title = newChapterTitle.trim() || `第${chapters.length + 1}章`;
     const chapter = await createChapter(currentWork.id, {
-      title: newChapterTitle,
+      title,
       content: '',
     });
+
     if (chapter) {
       setNewChapterTitle('');
       setShowNewChapter(false);
-      selectChapter(chapter.id);
+      await selectChapter(chapter.id);
+      setViewMode('workspace');
     }
   };
 
@@ -84,230 +155,110 @@ const Main: React.FC = () => {
 
   const handleSave = async () => {
     if (!currentChapter) return;
-    await saveCurrentChapter();
+    await updateChapter(currentChapter.id, { content });
     markAsSaved();
   };
 
   const handleLoginSuccess = async () => {
+    await checkApi();
     const result = await syncLocalToCloud();
     if (result.success) {
-      loadWorks();
+      await loadWorks();
+      setViewMode('home');
     }
   };
 
-  const storageInfo = getStorageSize();
+  const handleRefresh = async () => {
+    await checkApi();
+    await loadWorks();
+  };
+
+  const handleCloseWorkTab = () => {
+    setViewMode('home');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setViewMode('home');
+    await loadWorks();
+  };
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--color-bg-primary)]">
-      <div className="h-12 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-light)] flex items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
-            网文作者码字软件
-          </h1>
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                apiStatus === 'ok' ? 'bg-green-500' : apiStatus === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-              }`}
-            />
-            <span className="text-xs text-[var(--color-text-secondary)]">
-              API: {apiStatus === 'ok' ? '正常' : apiStatus === 'error' ? '异常' : '检测中'}
-            </span>
-          </div>
-        </div>
+    <div className="flex h-screen flex-col overflow-hidden bg-white font-sans text-slate-900">
+      <AppTabs
+        activeView={viewMode}
+        currentWork={currentWork}
+        apiStatus={apiStatus}
+        syncStatus={syncStatus}
+        isAuthenticated={isAuthenticated}
+        saved={saved}
+        onHomeClick={() => setViewMode('home')}
+        onWorkClick={() => currentWork && setViewMode('workspace')}
+        onCloseWork={handleCloseWorkTab}
+        onRefresh={handleRefresh}
+        onLogout={handleLogout}
+      />
 
-        <div className="flex items-center gap-4">
-          {isAuthenticated ? (
-            <>
-              <span className="text-sm text-[var(--color-text-secondary)]">
-                {user?.nickname || user?.email}
-              </span>
-              <button
-                onClick={logout}
-                className="text-sm text-red-600 hover:text-red-700"
-              >
-                退出
-              </button>
-            </>
-          ) : (
-            <span className="text-sm text-[var(--color-text-secondary)]">未登录</span>
-          )}
-        </div>
+      <div className="min-h-0 flex-1">
+        {viewMode === 'home' ? (
+          <WriterHome
+            works={works}
+            user={user}
+            isAuthenticated={isAuthenticated}
+            apiStatus={apiStatus}
+            syncStatus={syncStatus}
+            saved={saved}
+            onOpenWork={openWork}
+            onCreateWork={() => setShowNewWork(true)}
+            onLogin={() => setShowLogin(true)}
+            onComingSoon={setComingSoonFeature}
+          />
+        ) : (
+          <WriterWorkspace
+            currentWork={currentWork}
+            chapters={chapters}
+            currentChapter={currentChapter}
+            content={content}
+            chapterWords={chapterWords}
+            cursorLine={cursorLine}
+            cursorColumn={cursorColumn}
+            isAuthenticated={isAuthenticated}
+            onSelectChapter={selectChapter}
+            onCreateChapter={() => setShowNewChapter(true)}
+            onContentChange={handleContentChange}
+            onSave={handleSave}
+            onLogin={() => setShowLogin(true)}
+            onComingSoon={setComingSoonFeature}
+          />
+        )}
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-light)] flex flex-col">
-          <div className="p-3 border-b border-[var(--color-border-light)]">
-            <button
-              onClick={() => setShowNewWork(true)}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
-            >
-              + 新建作品
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {works.map((work) => (
-              <div
-                key={work.id}
-                onClick={() => selectWork(work.id)}
-                className={`p-3 cursor-pointer border-b border-[var(--color-border-light)] hover:bg-[var(--color-bg-tertiary)] ${
-                  currentWork?.id === work.id ? 'bg-blue-50' : ''
-                }`}
-              >
-                <div className="font-medium text-sm text-[var(--color-text-primary)] truncate">
-                  {work.title}
-                </div>
-                <div className="text-xs text-[var(--color-text-secondary)] mt-1">
-                  {work.chapterCount} 章 · {work.wordCount} 字
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 border-t border-[var(--color-border-light)]">
-            {!isAuthenticated ? (
-              <div className="space-y-2">
-                <div className="text-xs text-[var(--color-text-secondary)]">
-                  本地存储: {storageInfo.percentage}%
-                </div>
-                <button
-                  onClick={() => setShowLogin(true)}
-                  className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded flex items-center justify-center gap-2"
-                >
-                  <span>🔐</span>
-                  <span>登录 / 注册</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-xs text-[var(--color-text-secondary)]">
-                  👤 {user?.nickname}
-                </div>
-                <div className="text-xs text-[var(--color-text-secondary)]">
-                  📧 {user?.email}
-                </div>
-                {syncStatus === 'syncing' && (
-                  <div className="text-xs text-blue-600">同步中...</div>
-                )}
-                {syncStatus === 'error' && (
-                  <div className="text-xs text-red-600">{syncError}</div>
-                )}
-              </div>
-            )}
-          </div>
+      {syncStatus === 'error' && syncError && (
+        <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded bg-red-600 px-4 py-2 text-sm text-white shadow-lg">
+          {syncError}
         </div>
-
-        <div className="w-64 bg-[var(--color-bg-primary)] border-r border-[var(--color-border-light)] flex flex-col">
-          {currentWork ? (
-            <>
-              <div className="p-3 border-b border-[var(--color-border-light)]">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">
-                  {currentWork.title}
-                </h3>
-                <button
-                  onClick={() => setShowNewChapter(true)}
-                  className="mt-2 w-full py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded"
-                >
-                  + 新建章节
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    onClick={() => selectChapter(chapter.id)}
-                    className={`p-3 cursor-pointer border-b border-[var(--color-border-light)] hover:bg-[var(--color-bg-secondary)] ${
-                      currentChapter?.id === chapter.id ? 'bg-blue-50' : ''
-                    }`}
-                  >
-                    <div className="font-medium text-sm text-[var(--color-text-primary)]">
-                      {chapter.title}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-secondary)] mt-1">
-                      {chapter.wordCount} 字
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-[var(--color-text-secondary)]">
-              请选择作品
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 flex flex-col">
-          {currentChapter ? (
-            <>
-              <div className="h-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-light)] flex items-center justify-between px-4">
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {currentChapter.title}
-                </span>
-                <div className="flex items-center gap-3">
-                  <FeatureGate feature="AI大纲生成" onLoginClick={() => setShowLogin(true)}>
-                    <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded">
-                      AI 大纲
-                    </button>
-                  </FeatureGate>
-                  <FeatureGate feature="错别字检测" onLoginClick={() => setShowLogin(true)}>
-                    <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded">
-                      错别字检测
-                    </button>
-                  </FeatureGate>
-                  <FeatureGate feature="多平台发布" onLoginClick={() => setShowLogin(true)}>
-                    <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs rounded">
-                      发布
-                    </button>
-                  </FeatureGate>
-                  <span className={`text-xs ${saved ? 'text-green-600' : 'text-orange-500'}`}>
-                    {saved ? '已保存' : '未保存'}
-                  </span>
-                  <button
-                    onClick={handleSave}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <Editor content={content} onChange={handleContentChange} />
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-[var(--color-text-secondary)]">
-              请选择章节开始创作
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {showNewWork && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[var(--color-bg-primary)] rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--color-text-primary)]">新建作品</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-96 rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900">新建作品</h3>
             <input
               type="text"
               value={newWorkTitle}
-              onChange={(e) => setNewWorkTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-[var(--color-border-light)] rounded mb-4 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
+              onChange={(event) => setNewWorkTitle(event.target.value)}
+              className="mb-4 w-full rounded border border-slate-200 bg-white px-4 py-2 text-slate-900 outline-none focus:border-blue-500"
               placeholder="作品标题"
               autoFocus
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleCreateWork();
+              }}
             />
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowNewWork(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-              >
+              <button type="button" onClick={() => setShowNewWork(false)} className="rounded px-4 py-2 text-slate-600 hover:bg-slate-100">
                 取消
               </button>
-              <button
-                onClick={handleCreateWork}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-              >
+              <button type="button" onClick={handleCreateWork} className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 创建
               </button>
             </div>
@@ -316,28 +267,25 @@ const Main: React.FC = () => {
       )}
 
       {showNewChapter && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[var(--color-bg-primary)] rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold mb-4 text-[var(--color-text-primary)]">新建章节</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-96 rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900">新建章节</h3>
             <input
               type="text"
               value={newChapterTitle}
-              onChange={(e) => setNewChapterTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-[var(--color-border-light)] rounded mb-4 bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]"
-              placeholder="章节标题"
+              onChange={(event) => setNewChapterTitle(event.target.value)}
+              className="mb-4 w-full rounded border border-slate-200 bg-white px-4 py-2 text-slate-900 outline-none focus:border-blue-500"
+              placeholder={`第${chapters.length + 1}章`}
               autoFocus
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleCreateChapter();
+              }}
             />
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowNewChapter(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-              >
+              <button type="button" onClick={() => setShowNewChapter(false)} className="rounded px-4 py-2 text-slate-600 hover:bg-slate-100">
                 取消
               </button>
-              <button
-                onClick={handleCreateChapter}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-              >
+              <button type="button" onClick={handleCreateChapter} className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 创建
               </button>
             </div>
@@ -345,11 +293,47 @@ const Main: React.FC = () => {
         </div>
       )}
 
-      <Login
-        isOpen={showLogin}
-        onClose={() => setShowLogin(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
+      {comingSoonFeature && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="w-80 rounded-lg bg-white p-6 text-center shadow-xl">
+            <div className="text-lg font-semibold text-slate-900">{comingSoonFeature}</div>
+            <div className="mt-2 text-sm text-slate-500">该功能将在后续版本开放</div>
+            <button type="button" onClick={() => setComingSoonFeature(null)} className="mt-5 rounded bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700">
+              知道了
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Login isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={handleLoginSuccess} />
+
+      {updateAvailable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-96 rounded-lg bg-white p-6 shadow-xl">
+            <div className="text-center">
+              <div className="mb-3 text-4xl">↑</div>
+              <h3 className="mb-2 text-lg font-semibold text-slate-900">发现新版本</h3>
+              <p className="mb-4 text-sm text-slate-500">v{updateAvailable.version} 已发布，建议立即更新</p>
+              {downloading && (
+                <div className="mb-4">
+                  <div className="h-2 w-full rounded-full bg-slate-200">
+                    <div className="h-2 w-full animate-pulse rounded-full bg-blue-600" />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">下载中... {(downloadedBytes / 1024 / 1024).toFixed(1)} MB</p>
+                </div>
+              )}
+              <div className="flex justify-center gap-2">
+                <button type="button" onClick={() => window.location.reload()} className="rounded px-4 py-2 text-slate-600 hover:bg-slate-100" disabled={downloading}>
+                  稍后提醒
+                </button>
+                <button type="button" onClick={downloadAndInstall} className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50" disabled={downloading}>
+                  {downloading ? '更新中...' : '立即更新'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

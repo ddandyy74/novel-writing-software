@@ -4,6 +4,7 @@
  */
 
 import { getApiConfig } from '../config/api';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -47,7 +48,7 @@ class ApiClient {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      const response = await tauriFetch(`${baseUrl}${endpoint}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +69,7 @@ class ApiClient {
       return data;
     } catch (error: any) {
       clearTimeout(timeoutId);
-      
+
       if (error.name === 'AbortError') {
         return {
           code: -1,

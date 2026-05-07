@@ -86,7 +86,12 @@ export const config = {
 
   // CORS 配置
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
+    origin: process.env.CORS_ORIGIN?.split(',') || [
+      'http://localhost:3000',
+      'https://tauri.localhost',
+      'tauri://localhost',
+      'http://localhost:1420',
+    ],
   },
 
   // AI 服务配置

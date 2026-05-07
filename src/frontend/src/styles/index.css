@@ -1,3 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .cm-editor {
+    font-family: var(--font-family-editor);
+    font-size: 18px;
+    line-height: 2;
+    background: transparent;
+  }
+
+  .cm-content {
+    padding: 0 0 80px 0;
+  }
+
+  .cm-line {
+    text-indent: 2em;
+  }
+
+  .cm-gutters {
+    background: transparent;
+    border-right: none;
+  }
+}
+
 /* 全局样式 - 基于设计令牌 */
 
 /* ========== 字体家族 ========== */
